@@ -15,22 +15,34 @@ const CounsellingForm = () => {
     const [message, setMessage] = useState({ type: '', text: '' })
     const [studentData, setStudentData] = useState(null)
 
+    // Set up axios with auth header from localStorage
+    useEffect(() => {
+        const token = localStorage.getItem('token')
+        if (token) {
+            axios.defaults.headers.common['x-auth-token'] = token
+        }
+    }, [])
+
     useEffect(() => {
         fetchStudentData()
     }, [])
 
     const fetchStudentData = async () => {
         try {
+            console.log('Fetching student profile...')
             const response = await axios.get("/api/student/profile")
+            console.log('Profile response:', response.data)
             setStudentData(response.data)
             if (response.data) {
                 reset(response.data)
             }
         } catch (error) {
             console.error("Error fetching student data:", error)
+            console.error("Error response data:", error.response?.data)
+            console.error("Error message:", error.message)
             setMessage({
                 type: 'error',
-                text: 'Failed to load student data'
+                text: error.response?.data?.error || 'Failed to load student data. Please check your authentication.'
             })
         }
     }
@@ -40,16 +52,36 @@ const CounsellingForm = () => {
         setMessage({ type: '', text: '' })
 
         try {
-            const response = await axios.post("/api/student/counselling-form", data)
-            setMessage({
-                type: 'success',
-                text: response.data?.message || 'Saved successfully!'
-            })
+            // Clean the data - remove empty strings and undefined values
+            const cleanData = Object.keys(data).reduce((acc, key) => {
+                const value = data[key]
+                // Only include fields that have actual values
+                if (value !== '' && value !== undefined && value !== null) {
+                    acc[key] = value
+                }
+                return acc
+            }, {})
+
+            console.log('Submitting cleaned form data:', cleanData)
+            const response = await axios.post("/api/student/counselling-form", cleanData)
             fetchStudentData() // Refresh data
         } catch (error) {
+            console.error('Form submission error:', error)
+            console.error('Error response:', error.response?.data)
+
+            let errorText = 'Failed to submit form. Please try again.'
+
+            if (error.response?.data?.error) {
+                errorText = error.response.data.error
+            } else if (error.response?.data?.details) {
+                errorText = `Error: ${JSON.stringify(error.response.data.details)}`
+            } else if (error.message) {
+                errorText = error.message
+            }
+
             setMessage({
                 type: 'error',
-                text: error.response?.data?.error || 'Failed to submit form. Please try again.'
+                text: errorText
             })
         }
 
@@ -779,3 +811,4 @@ const CounsellingForm = () => {
 }
 
 export default CounsellingForm
+

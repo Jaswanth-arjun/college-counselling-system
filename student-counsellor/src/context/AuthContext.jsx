@@ -23,12 +23,31 @@ export const AuthProvider = ({ children }) => {
     const loadUser = async () => {
         try {
             const tokenData = JSON.parse(atob(token.split('.')[1]))
-            setUser({
+            const userData = {
                 id: tokenData.id,
                 role: tokenData.role,
                 roll_no: tokenData.roll_no,
                 email: tokenData.email
-            })
+            }
+
+            // Fetch additional info based on role
+            if (tokenData.role === 'counsellor') {
+                try {
+                    const response = await axios.get('/api/counsellor/profile')
+                    userData.counsellorInfo = response.data
+                } catch (error) {
+                    console.warn('Could not fetch counsellor info:', error)
+                }
+            } else if (tokenData.role === 'student') {
+                try {
+                    const response = await axios.get('/api/student/profile')
+                    userData.studentInfo = response.data
+                } catch (error) {
+                    console.warn('Could not fetch student info:', error)
+                }
+            }
+
+            setUser(userData)
         } catch (error) {
             console.error('Error loading user:', error)
             logout()
