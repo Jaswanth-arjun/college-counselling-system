@@ -14,7 +14,7 @@ import {
     Settings
 } from 'lucide-react'
 import StudentList from './StudentList'
-import StudentDetails from './StudentDetails'
+import StudentDetailsEditable from './StudentDetailsEditable'
 
 const CounsellorDashboard = () => {
     const { user, logout } = useAuth()
@@ -151,7 +151,7 @@ const CounsellorDashboard = () => {
                         <Route path="/" element={<Navigate to="dashboard" />} />
                         <Route path="dashboard" element={<CounsellorHome />} />
                         <Route path="students" element={<StudentList />} />
-                        <Route path="students/:id" element={<StudentDetails />} />
+                        <Route path="students/:id" element={<StudentDetailsEditable />} />
                         <Route path="counselling-records" element={<CounsellingRecord />} />
                         <Route path="settings" element={<CounsellorSettings />} />
                         <Route path="students/:id/counselling/new" element={<CounsellingRecord />} />

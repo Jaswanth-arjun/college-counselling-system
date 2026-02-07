@@ -232,16 +232,16 @@ const StudentDetails = () => {
                                 <div>
                                     <p className="text-sm text-gray-600 mb-2">Accommodation Type</p>
                                     <div className="flex items-center space-x-4">
-                                        {student.is_hosteller && (
+                                        {student.residence === 'Hosteller' && (
                                             <div className="flex items-center">
                                                 <Home className="w-5 h-5 text-blue-600 mr-2" />
                                                 <span className="font-medium">Hosteller</span>
                                                 <span className="ml-2 text-sm text-gray-600">
-                                                    {student.hostel_name}
+                                                    {student.hostel_name || 'Not specified'}
                                                 </span>
                                             </div>
                                         )}
-                                        {student.is_dayscholar && (
+                                        {student.residence === 'Dayscholar' && (
                                             <div className="flex items-center">
                                                 <Bus className="w-5 h-5 text-green-600 mr-2" />
                                                 <span className="font-medium">Dayscholar</span>
@@ -252,6 +252,9 @@ const StudentDetails = () => {
                                                 )}
                                             </div>
                                         )}
+                                        {!student.residence && (
+                                            <p className="text-gray-500">Not provided</p>
+                                        )}
                                     </div>
                                 </div>
 
@@ -260,10 +263,28 @@ const StudentDetails = () => {
                                     <div className="bg-gray-50 p-4 rounded-lg">
                                         <div className="flex items-center mb-2">
                                             <DollarSign className="w-4 h-4 text-gray-400 mr-2" />
-                                            <p className="text-sm text-gray-600">Tuition Fee</p>
+                                            <p className="text-sm text-gray-600">Tuition RTF</p>
                                         </div>
                                         <p className="text-lg font-semibold">
-                                            ₹{student.tuition_fee || '0'}
+                                            ₹{student.tuition_rtf || '0'}
+                                        </p>
+                                    </div>
+                                    <div className="bg-gray-50 p-4 rounded-lg">
+                                        <div className="flex items-center mb-2">
+                                            <DollarSign className="w-4 h-4 text-gray-400 mr-2" />
+                                            <p className="text-sm text-gray-600">Tuition MQ</p>
+                                        </div>
+                                        <p className="text-lg font-semibold">
+                                            ₹{student.tuition_mq || '0'}
+                                        </p>
+                                    </div>
+                                    <div className="bg-gray-50 p-4 rounded-lg">
+                                        <div className="flex items-center mb-2">
+                                            <DollarSign className="w-4 h-4 text-gray-400 mr-2" />
+                                            <p className="text-sm text-gray-600">Tuition NRTF</p>
+                                        </div>
+                                        <p className="text-lg font-semibold">
+                                            ₹{student.tuition_nrtf || '0'}
                                         </p>
                                     </div>
                                     <div className="bg-gray-50 p-4 rounded-lg">
@@ -288,21 +309,6 @@ const StudentDetails = () => {
                                         <p className="text-sm text-gray-600">Concession</p>
                                         <p className="text-lg font-semibold">
                                             ₹{student.concession || '0'}
-                                        </p>
-                                    </div>
-                                    <div className="bg-gray-50 p-4 rounded-lg">
-                                        <p className="text-sm text-gray-600">Balance Fee</p>
-                                        <p className="text-lg font-semibold">
-                                            ₹{student.balance_fee || '0'}
-                                        </p>
-                                    </div>
-                                    <div className="bg-gray-50 p-4 rounded-lg">
-                                        <div className="flex items-center mb-2">
-                                            <Clock className="w-4 h-4 text-gray-400 mr-2" />
-                                            <p className="text-sm text-gray-600">Attendance</p>
-                                        </div>
-                                        <p className="text-lg font-semibold">
-                                            {student.attendance_percentage || '0'}%
                                         </p>
                                     </div>
                                 </div>
@@ -351,14 +357,74 @@ const StudentDetails = () => {
                                     <span className="font-medium">{student.attendance_percentage || '0'}%</span>
                                 </div>
                                 <div className="flex justify-between items-center py-3 border-b border-gray-100">
-                                    <span className="text-gray-600">Fee Status</span>
-                                    <span className={`font-medium ${student.balance_fee > 0 ? 'text-red-600' : 'text-green-600'}`}>
-                                        {student.balance_fee > 0 ? 'Pending' : 'Cleared'}
+                                    <span className="text-gray-600">Backlogs</span>
+                                    <span className={`font-medium ${student.backlogs > 0 ? 'text-orange-600' : 'text-green-600'}`}>
+                                        {student.backlogs || '0'}
                                     </span>
                                 </div>
                             </div>
                         </div>
                     </div>
+
+                    {/* Projects and Activities */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                        {/* CSP Project */}
+                        <div className="bg-blue-50 rounded-lg p-6">
+                            <h4 className="font-medium text-gray-900 mb-4">CSP Project</h4>
+                            {student.csp_project_title ? (
+                                <div className="space-y-3">
+                                    <div>
+                                        <p className="text-sm text-gray-600">Title</p>
+                                        <p className="font-medium text-gray-900">{student.csp_project_title}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-sm text-gray-600">Guide</p>
+                                        <p className="font-medium text-gray-900">{student.project_guide || 'Not specified'}</p>
+                                    </div>
+                                </div>
+                            ) : (
+                                <p className="text-gray-600">No project information provided</p>
+                            )}
+                        </div>
+
+                        {/* Internship */}
+                        <div className="bg-green-50 rounded-lg p-6">
+                            <h4 className="font-medium text-gray-900 mb-4">Internship</h4>
+                            {student.internship_details ? (
+                                <p className="text-gray-800">{student.internship_details}</p>
+                            ) : (
+                                <p className="text-gray-600">No internship information provided</p>
+                            )}
+                        </div>
+
+                        {/* MOOCs */}
+                        <div className="bg-purple-50 rounded-lg p-6">
+                            <h4 className="font-medium text-gray-900 mb-4">MOOCs Courses</h4>
+                            {student.moocs_courses ? (
+                                <p className="text-gray-800">{student.moocs_courses}</p>
+                            ) : (
+                                <p className="text-gray-600">No MOOCs information provided</p>
+                            )}
+                        </div>
+
+                        {/* Extra Activities */}
+                        <div className="bg-yellow-50 rounded-lg p-6">
+                            <h4 className="font-medium text-gray-900 mb-4">Extra Activities</h4>
+                            {student.extra_activities ? (
+                                <p className="text-gray-800">{student.extra_activities}</p>
+                            ) : (
+                                <p className="text-gray-600">No activities information provided</p>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Remarks */}
+                    {student.remarks && (
+                        <div className="bg-white border border-gray-200 rounded-lg p-6 mt-6">
+                            <h4 className="font-medium text-gray-900 mb-3">Remarks</h4>
+                            <p className="text-gray-800">{student.remarks}</p>
+                        </div>
+                    )}
                 </div>
             )}
 
