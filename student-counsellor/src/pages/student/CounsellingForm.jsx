@@ -14,6 +14,8 @@ const CounsellingForm = () => {
     const [loading, setLoading] = useState(false)
     const [message, setMessage] = useState({ type: '', text: '' })
     const [studentData, setStudentData] = useState(null)
+    const [isSubmitted, setIsSubmitted] = useState(false)
+    const [isFilled, setIsFilled] = useState(false)
 
     // Set up axios with auth header from localStorage
     useEffect(() => {
@@ -33,6 +35,12 @@ const CounsellingForm = () => {
             const response = await axios.get("/api/student/profile")
             console.log('Profile response:', response.data)
             setStudentData(response.data)
+
+            // Check if any counselling form fields are filled
+            const hasFilledFields = checkIfFormFilled(response.data)
+            setIsFilled(hasFilledFields)
+            setIsSubmitted(hasFilledFields)
+
             if (response.data) {
                 reset(response.data)
             }
@@ -45,6 +53,19 @@ const CounsellingForm = () => {
                 text: error.response?.data?.error || 'Failed to load student data. Please check your authentication.'
             })
         }
+    }
+
+    // Check if any counselling form field is filled
+    const checkIfFormFilled = (data) => {
+        if (!data) return false
+        // Check for any non-empty counselling-related fields
+        const counsellingFields = [
+            'aadhar_number', 'place', 'district', 'state', 'pincode', 'address', 'mobile',
+            'father_name', 'mother_name', 'father_mobile', 'mother_mobile',
+            'residence', 'hostel_name', 'hostel_fee', 'bus_no', 'bus_route', 'bus_fee',
+            'tuition_fee', 'concession', 'balance_fee', 'attendance_percentage'
+        ]
+        return counsellingFields.some(field => data[field] !== null && data[field] !== undefined && data[field] !== '')
     }
 
     const onSubmit = async (data) => {
@@ -63,8 +84,27 @@ const CounsellingForm = () => {
             }, {})
 
             console.log('Submitting cleaned form data:', cleanData)
-            const response = await axios.post("/api/student/counselling-form", cleanData)
-            fetchStudentData() // Refresh data
+            const response = await axios.put("/api/student/counselling-form", cleanData)
+
+            console.log('Save response:', response.data)
+
+            // Show success message
+            setMessage({
+                type: 'success',
+                text: 'Your information has been saved successfully!'
+            })
+
+            // Mark as submitted
+            setIsSubmitted(true)
+            setIsFilled(true)
+
+            // Wait a moment then refresh student data to ensure database write completes
+            setTimeout(() => {
+                fetchStudentData()
+            }, 500)
+
+            // Clear message after 3 seconds
+            setTimeout(() => setMessage({ type: '', text: '' }), 3000)
         } catch (error) {
             console.error('Form submission error:', error)
             console.error('Error response:', error.response?.data)
@@ -120,6 +160,8 @@ const CounsellingForm = () => {
                 <p className="text-gray-600">Complete your personal, academic, and counselling details</p>
             </div>
 
+
+
             {/* Message Alert */}
             {message.text && (
                 <div className={`mb-6 p-4 rounded-lg ${message.type === 'success' ? 'bg-green-50 border border-green-200 text-green-700' : 'bg-red-50 border border-red-200 text-red-700'}`}>
@@ -166,18 +208,19 @@ const CounsellingForm = () => {
                                 Aadhar Number *
                             </label>
                             <input
-                                {...register("aadhar", {
+                                {...register("aadhar_number", {
                                     required: "Aadhar number is required",
                                     pattern: {
                                         value: /^[0-9]{12}$/,
                                         message: "Invalid Aadhar number (12 digits required)"
                                     }
                                 })}
-                                className="input-field"
+                                className={`input-field ${isSubmitted ? 'bg-gray-50 cursor-not-allowed' : ''}`}
                                 placeholder="Enter 12-digit Aadhar"
+                                readOnly={isSubmitted}
                             />
-                            {errors.aadhar && (
-                                <p className="text-red-500 text-sm mt-1">{errors.aadhar.message}</p>
+                            {errors.aadhar_number && (
+                                <p className="text-red-500 text-sm mt-1">{errors.aadhar_number.message}</p>
                             )}
                         </div>
 
@@ -187,8 +230,9 @@ const CounsellingForm = () => {
                             </label>
                             <input
                                 {...register("place", { required: "Place is required" })}
-                                className="input-field"
+                                className={`input-field ${isSubmitted ? 'bg-gray-50 cursor-not-allowed' : ''}`}
                                 placeholder="Enter your city/town"
+                                readOnly={isSubmitted}
                             />
                             {errors.place && (
                                 <p className="text-red-500 text-sm mt-1">{errors.place.message}</p>
@@ -201,8 +245,9 @@ const CounsellingForm = () => {
                             </label>
                             <input
                                 {...register("district", { required: "District is required" })}
-                                className="input-field"
+                                className={`input-field ${isSubmitted ? 'bg-gray-50 cursor-not-allowed' : ''}`}
                                 placeholder="Enter district"
+                                readOnly={isSubmitted}
                             />
                             {errors.district && (
                                 <p className="text-red-500 text-sm mt-1">{errors.district.message}</p>
@@ -215,8 +260,9 @@ const CounsellingForm = () => {
                             </label>
                             <input
                                 {...register("state", { required: "State is required" })}
-                                className="input-field"
+                                className={`input-field ${isSubmitted ? 'bg-gray-50 cursor-not-allowed' : ''}`}
                                 placeholder="Enter state"
+                                readOnly={isSubmitted}
                             />
                             {errors.state && (
                                 <p className="text-red-500 text-sm mt-1">{errors.state.message}</p>
@@ -235,8 +281,9 @@ const CounsellingForm = () => {
                                         message: "Invalid pincode (6 digits required)"
                                     }
                                 })}
-                                className="input-field"
+                                className={`input-field ${isSubmitted ? 'bg-gray-50 cursor-not-allowed' : ''}`}
                                 placeholder="Enter 6-digit pincode"
+                                readOnly={isSubmitted}
                             />
                             {errors.pincode && (
                                 <p className="text-red-500 text-sm mt-1">{errors.pincode.message}</p>
@@ -249,8 +296,9 @@ const CounsellingForm = () => {
                             </label>
                             <textarea
                                 {...register("address", { required: "Address is required" })}
-                                className="input-field min-h-[100px]"
+                                className={`input-field min-h-[100px] ${isSubmitted ? 'bg-gray-50 cursor-not-allowed' : ''}`}
                                 placeholder="Enter your complete address"
+                                readOnly={isSubmitted}
                             />
                             {errors.address && (
                                 <p className="text-red-500 text-sm mt-1">{errors.address.message}</p>
@@ -276,8 +324,9 @@ const CounsellingForm = () => {
                                 </label>
                                 <input
                                     {...register("father_name", { required: "Father's name is required" })}
-                                    className="input-field"
+                                    className={`input-field ${isSubmitted ? 'bg-gray-50 cursor-not-allowed' : ''}`}
                                     placeholder="Enter father's name"
+                                    readOnly={isSubmitted}
                                 />
                                 {errors.father_name && (
                                     <p className="text-red-500 text-sm mt-1">{errors.father_name.message}</p>
@@ -295,8 +344,9 @@ const CounsellingForm = () => {
                                             message: "Invalid mobile number"
                                         }
                                     })}
-                                    className="input-field"
+                                    className={`input-field ${isSubmitted ? 'bg-gray-50 cursor-not-allowed' : ''}`}
                                     placeholder="Enter 10-digit mobile number"
+                                    readOnly={isSubmitted}
                                 />
                                 {errors.father_mobile && (
                                     <p className="text-red-500 text-sm mt-1">{errors.father_mobile.message}</p>
@@ -309,7 +359,8 @@ const CounsellingForm = () => {
                                 </label>
                                 <select
                                     {...register("father_occupation")}
-                                    className="input-field"
+                                    className={`input-field ${isSubmitted ? 'bg-gray-50 cursor-not-allowed' : ''}`}
+                                    disabled={isSubmitted}
                                 >
                                     <option value="">Select occupation</option>
                                     {occupationOptions.map((occupation) => (
@@ -330,8 +381,9 @@ const CounsellingForm = () => {
                                 </label>
                                 <input
                                     {...register("mother_name", { required: "Mother's name is required" })}
-                                    className="input-field"
+                                    className={`input-field ${isSubmitted ? 'bg-gray-50 cursor-not-allowed' : ''}`}
                                     placeholder="Enter mother's name"
+                                    readOnly={isSubmitted}
                                 />
                                 {errors.mother_name && (
                                     <p className="text-red-500 text-sm mt-1">{errors.mother_name.message}</p>
@@ -349,8 +401,9 @@ const CounsellingForm = () => {
                                             message: "Invalid mobile number"
                                         }
                                     })}
-                                    className="input-field"
+                                    className={`input-field ${isSubmitted ? 'bg-gray-50 cursor-not-allowed' : ''}`}
                                     placeholder="Enter 10-digit mobile number"
+                                    readOnly={isSubmitted}
                                 />
                                 {errors.mother_mobile && (
                                     <p className="text-red-500 text-sm mt-1">{errors.mother_mobile.message}</p>
@@ -363,7 +416,8 @@ const CounsellingForm = () => {
                                 </label>
                                 <select
                                     {...register("mother_occupation")}
-                                    className="input-field"
+                                    className={`input-field ${isSubmitted ? 'bg-gray-50 cursor-not-allowed' : ''}`}
+                                    disabled={isSubmitted}
                                 >
                                     <option value="">Select occupation</option>
                                     {occupationOptions.map((occupation) => (
@@ -393,8 +447,9 @@ const CounsellingForm = () => {
                                 {...register("tuition_rtf")}
                                 type="number"
                                 step="0.01"
-                                className="input-field"
+                                className={`input-field ${isSubmitted ? 'bg-gray-50 cursor-not-allowed' : ''}`}
                                 placeholder="0.00"
+                                readOnly={isSubmitted}
                             />
                         </div>
 
@@ -406,8 +461,9 @@ const CounsellingForm = () => {
                                 {...register("tuition_mq")}
                                 type="number"
                                 step="0.01"
-                                className="input-field"
+                                className={`input-field ${isSubmitted ? 'bg-gray-50 cursor-not-allowed' : ''}`}
                                 placeholder="0.00"
+                                readOnly={isSubmitted}
                             />
                         </div>
 
@@ -419,8 +475,9 @@ const CounsellingForm = () => {
                                 {...register("tuition_nrtf")}
                                 type="number"
                                 step="0.01"
-                                className="input-field"
+                                className={`input-field ${isSubmitted ? 'bg-gray-50 cursor-not-allowed' : ''}`}
                                 placeholder="0.00"
+                                readOnly={isSubmitted}
                             />
                         </div>
 
@@ -432,8 +489,9 @@ const CounsellingForm = () => {
                                 {...register("concession")}
                                 type="number"
                                 step="0.01"
-                                className="input-field"
+                                className={`input-field ${isSubmitted ? 'bg-gray-50 cursor-not-allowed' : ''}`}
                                 placeholder="0.00"
+                                readOnly={isSubmitted}
                             />
                         </div>
                     </div>
@@ -455,6 +513,7 @@ const CounsellingForm = () => {
                                         value={option.value}
                                         {...register("residence")}
                                         className="h-4 w-4 text-blue-600"
+                                        disabled={isSubmitted}
                                     />
                                     <span className="text-gray-700">{option.label}</span>
                                 </label>
@@ -468,8 +527,9 @@ const CounsellingForm = () => {
                                 </label>
                                 <input
                                     {...register("hostel_name")}
-                                    className="input-field"
+                                    className={`input-field ${isSubmitted ? 'bg-gray-50 cursor-not-allowed' : ''}`}
                                     placeholder="Enter hostel name"
+                                    readOnly={isSubmitted}
                                 />
                             </div>
 
@@ -480,7 +540,8 @@ const CounsellingForm = () => {
                                 <input
                                     {...register("hostel_admission_date")}
                                     type="date"
-                                    className="input-field"
+                                    className={`input-field ${isSubmitted ? 'bg-gray-50 cursor-not-allowed' : ''}`}
+                                    readOnly={isSubmitted}
                                 />
                             </div>
 
@@ -492,8 +553,9 @@ const CounsellingForm = () => {
                                     {...register("hostel_fee")}
                                     type="number"
                                     step="0.01"
-                                    className="input-field"
+                                    className={`input-field ${isSubmitted ? 'bg-gray-50 cursor-not-allowed' : ''}`}
                                     placeholder="0.00"
+                                    readOnly={isSubmitted}
                                 />
                             </div>
 
@@ -505,8 +567,9 @@ const CounsellingForm = () => {
                                     {...register("hostel_balance")}
                                     type="number"
                                     step="0.01"
-                                    className="input-field"
+                                    className={`input-field ${isSubmitted ? 'bg-gray-50 cursor-not-allowed' : ''}`}
                                     placeholder="0.00"
+                                    readOnly={isSubmitted}
                                 />
                             </div>
                         </div>
@@ -527,8 +590,9 @@ const CounsellingForm = () => {
                             </label>
                             <input
                                 {...register("bus_no")}
-                                className="input-field"
+                                className={`input-field ${isSubmitted ? 'bg-gray-50 cursor-not-allowed' : ''}`}
                                 placeholder="Enter bus number"
+                                readOnly={isSubmitted}
                             />
                         </div>
 
@@ -538,8 +602,9 @@ const CounsellingForm = () => {
                             </label>
                             <input
                                 {...register("bus_route")}
-                                className="input-field"
+                                className={`input-field ${isSubmitted ? 'bg-gray-50 cursor-not-allowed' : ''}`}
                                 placeholder="Enter bus route"
+                                readOnly={isSubmitted}
                             />
                         </div>
 
@@ -551,8 +616,9 @@ const CounsellingForm = () => {
                                 {...register("bus_fee")}
                                 type="number"
                                 step="0.01"
-                                className="input-field"
+                                className={`input-field ${isSubmitted ? 'bg-gray-50 cursor-not-allowed' : ''}`}
                                 placeholder="0.00"
+                                readOnly={isSubmitted}
                             />
                         </div>
 
@@ -564,8 +630,9 @@ const CounsellingForm = () => {
                                 {...register("bus_balance")}
                                 type="number"
                                 step="0.01"
-                                className="input-field"
+                                className={`input-field ${isSubmitted ? 'bg-gray-50 cursor-not-allowed' : ''}`}
                                 placeholder="0.00"
+                                readOnly={isSubmitted}
                             />
                         </div>
                     </div>
@@ -596,8 +663,9 @@ const CounsellingForm = () => {
                                                     step="0.01"
                                                     min="0"
                                                     max="100"
-                                                    className="input-field"
+                                                    className={`input-field ${isSubmitted ? 'bg-gray-50 cursor-not-allowed' : ''}`}
                                                     placeholder={`${year}-${sem} Sem`}
+                                                    readOnly={isSubmitted}
                                                 />
                                             </div>
                                         ))}
@@ -628,8 +696,9 @@ const CounsellingForm = () => {
                                                     {...register(`backlogs_${year}_sem${sem}`)}
                                                     type="number"
                                                     min="0"
-                                                    className="input-field"
+                                                    className={`input-field ${isSubmitted ? 'bg-gray-50 cursor-not-allowed' : ''}`}
                                                     placeholder={`${year}-${sem} Sem`}
+                                                    readOnly={isSubmitted}
                                                 />
                                             </div>
                                         ))}
@@ -655,8 +724,9 @@ const CounsellingForm = () => {
                                 </label>
                                 <input
                                     {...register("csp_project")}
-                                    className="input-field"
+                                    className={`input-field ${isSubmitted ? 'bg-gray-50 cursor-not-allowed' : ''}`}
                                     placeholder="Enter project title"
+                                    readOnly={isSubmitted}
                                 />
                             </div>
 
@@ -666,8 +736,9 @@ const CounsellingForm = () => {
                                 </label>
                                 <input
                                     {...register("guide")}
-                                    className="input-field"
+                                    className={`input-field ${isSubmitted ? 'bg-gray-50 cursor-not-allowed' : ''}`}
                                     placeholder="Enter guide name"
+                                    readOnly={isSubmitted}
                                 />
                             </div>
                         </div>
@@ -679,8 +750,9 @@ const CounsellingForm = () => {
                                 </label>
                                 <input
                                     {...register("internship")}
-                                    className="input-field"
+                                    className={`input-field ${isSubmitted ? 'bg-gray-50 cursor-not-allowed' : ''}`}
                                     placeholder="Enter internship details"
+                                    readOnly={isSubmitted}
                                 />
                             </div>
 
@@ -690,8 +762,9 @@ const CounsellingForm = () => {
                                 </label>
                                 <input
                                     {...register("moocs")}
-                                    className="input-field"
+                                    className={`input-field ${isSubmitted ? 'bg-gray-50 cursor-not-allowed' : ''}`}
                                     placeholder="Enter MOOCs course"
+                                    readOnly={isSubmitted}
                                 />
                             </div>
                         </div>
@@ -702,8 +775,9 @@ const CounsellingForm = () => {
                             </label>
                             <textarea
                                 {...register("extra_activities")}
-                                className="input-field min-h-[100px]"
+                                className={`input-field min-h-[100px] ${isSubmitted ? 'bg-gray-50 cursor-not-allowed' : ''}`}
                                 placeholder="Enter any extracurricular activities, achievements, etc."
+                                readOnly={isSubmitted}
                             />
                         </div>
                     </div>
@@ -754,7 +828,8 @@ const CounsellingForm = () => {
                                             <input
                                                 type="date"
                                                 {...register(`counselling_info.${index}.date`)}
-                                                className="input-field pl-10"
+                                                className={`input-field pl-10 ${isSubmitted ? 'bg-gray-50 cursor-not-allowed' : ''}`}
+                                                readOnly={isSubmitted}
                                             />
                                         </div>
                                     </div>
@@ -766,8 +841,9 @@ const CounsellingForm = () => {
                                         <input
                                             type="text"
                                             {...register(`counselling_info.${index}.remarks`)}
-                                            className="input-field"
+                                            className={`input-field ${isSubmitted ? 'bg-gray-50 cursor-not-allowed' : ''}`}
                                             placeholder="Enter counselling remarks"
+                                            readOnly={isSubmitted}
                                         />
                                     </div>
                                 </div>
@@ -782,28 +858,45 @@ const CounsellingForm = () => {
                             <Plus className="w-5 h-5" />
                             <span>Add Counselling Session</span>
                         </button>
-                    </div>
-                </div>
-
-                {/* SUBMIT BUTTON */}
-                <div className="flex justify-end sticky bottom-6 bg-white/90 backdrop-blur-sm p-4 rounded-lg shadow-lg">
-                    <button
-                        type="submit"
-                        disabled={loading}
-                        className="btn-primary flex items-center space-x-2 px-8 py-3 text-lg"
-                    >
-                        {loading ? (
-                            <>
-                                <Loader className="w-5 h-5 animate-spin" />
-                                <span>Saving...</span>
-                            </>
-                        ) : (
-                            <>
-                                <Save className="w-5 h-5" />
-                                <span>Save All Information</span>
-                            </>
+                        {/* SUBMIT BUTTON - Only show if not submitted */}
+                        {!isSubmitted && (
+                            <div className="flex justify-end sticky bottom-6 bg-white/90 backdrop-blur-sm p-4 rounded-lg shadow-lg">
+                                <button
+                                    type="submit"
+                                    disabled={loading}
+                                    className="btn-primary flex items-center space-x-2 px-8 py-3 text-lg"
+                                >
+                                    {loading ? (
+                                        <>
+                                            <Loader className="w-5 h-5 animate-spin" />
+                                            <span>Saving...</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Save className="w-5 h-5" />
+                                            <span>Save All Information</span>
+                                        </>
+                                    )}
+                                </button>
+                            </div>
                         )}
-                    </button>
+
+                        {/* SUBMITTED MESSAGE - Show if already submitted */}
+                        {isSubmitted && (
+                            <div className="sticky bottom-6 bg-white/90 backdrop-blur-sm p-6 rounded-lg shadow-lg border-2 border-green-200">
+                                <div className="space-y-4">
+                                    <div className="flex items-center space-x-2 text-green-600">
+                                        <Save className="w-6 h-6" />
+                                        <span className="text-lg font-semibold">Information Saved Successfully</span>
+                                    </div>
+                                    <p className="text-gray-700 text-sm">
+                                        <strong>Your information is now saved and read-only.</strong> If you need to modify any details, please contact your assigned counsellor. Any changes to your counselling information will be made by your counsellor through the admin portal.
+                                    </p>
+                                </div>
+                            </div>
+                        )}
+
+                    </div>
                 </div>
             </form>
         </div>

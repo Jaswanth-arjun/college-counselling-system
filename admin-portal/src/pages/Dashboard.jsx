@@ -18,6 +18,7 @@ import Students from './Students'
 import Counsellors from './Counsellors'
 import RegisterCounsellor from './RegisterCounsellor'
 import EditCounsellor from './EditCounsellor'
+import EditStudent from './EditStudent'
 import AdminLogs from './AdminLogs'
 
 const Dashboard = () => {
@@ -151,6 +152,7 @@ const Dashboard = () => {
                         <Route path="/" element={<Navigate to="home" />} />
                         <Route path="home" element={<DashboardHome />} />
                         <Route path="students" element={<Students />} />
+                        <Route path="edit-student/:id" element={<EditStudent />} />
                         <Route path="counsellors" element={<Counsellors />} />
                         <Route path="register-counsellor" element={<RegisterCounsellor />} />
                         <Route path="edit-counsellor/:id" element={<EditCounsellor />} />
