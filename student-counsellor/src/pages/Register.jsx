@@ -27,27 +27,32 @@ const Register = () => {
         resolver: yupResolver(schema)
     })
 
+    // In Register.jsx handleSubmit:
     const onSubmit = async (data) => {
-        setLoading(true)
-        setError('')
-        setMessage('')
+        setLoading(true);
+        setError('');
+        setMessage('');
 
         const result = await registerUser({
             roll_no: data.roll_no,
             name: data.name,
             email: data.email,
             password: data.password
-        })
+        });
 
         if (result.success) {
-            setMessage('Registration successful! Please check your email to verify your account.')
-            setTimeout(() => navigate('/login'), 3000)
+            setMessage({
+                type: 'success',
+                text: result.data.message,
+                details: result.data.instructions || ''
+            });
+            setTimeout(() => navigate('/login'), 5000);
         } else {
-            setError(result.error)
+            setError(result.error);
         }
 
-        setLoading(false)
-    }
+        setLoading(false);
+    };
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
@@ -69,11 +74,13 @@ const Register = () => {
                     </div>
 
                     {message && (
-                        <div className="bg-green-50 text-green-700 p-4 rounded-lg mb-6">
-                            {message}
+                        <div className={`p-4 rounded-lg mb-6 ${message.type === 'success' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
+                            <p className="font-medium">{message.text}</p>
+                            {message.details && (
+                                <p className="text-sm mt-1">{message.details}</p>
+                            )}
                         </div>
                     )}
-
                     {error && (
                         <div className="bg-red-50 text-red-700 p-4 rounded-lg mb-6">
                             {error}
