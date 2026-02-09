@@ -4,11 +4,15 @@ import { useForm } from 'react-hook-form'
 import axios from 'axios'
 import {
     ArrowLeft,
-    User,
     Save,
-    X,
-    Edit2,
     Loader,
+    Plus,
+    Trash2,
+    Calendar,
+    MessageSquare,
+    User,
+    Edit2,
+    X,
     FileText
 } from 'lucide-react'
 
@@ -16,6 +20,27 @@ const StudentDetailsEditable = () => {
     const { id } = useParams()
     const navigate = useNavigate()
     const { register, handleSubmit, reset, formState: { errors } } = useForm()
+
+    const academicYears = ["I", "II", "III", "IV"]
+    const semesters = ["I", "II"]
+
+    const occupationOptions = [
+        "Government Employee",
+        "Private Employee",
+        "Business",
+        "Farmer",
+        "Labourer",
+        "Teacher",
+        "Doctor",
+        "Engineer",
+        "Lawyer",
+        "Other"
+    ]
+
+    const residenceOptions = [
+        { value: "hosteller", label: "Hosteller" },
+        { value: "dayscholar", label: "Dayscholar" }
+    ]
 
     const [loading, setLoading] = useState(true)
     const [saving, setSaving] = useState(false)
@@ -34,8 +59,23 @@ const StudentDetailsEditable = () => {
         try {
             setLoading(true)
             const response = await axios.get(`/api/counsellor/student/${id}`)
-            setStudent(response.data)
-            reset(response.data)
+            const studentData = response.data || {}
+
+            // Flatten attendance_data and backlogs_data (if present) into top-level keys for form reset
+            const flattened = { ...studentData }
+            if (studentData.attendance_data && typeof studentData.attendance_data === 'object') {
+                Object.entries(studentData.attendance_data).forEach(([k, v]) => {
+                    flattened[k] = v
+                })
+            }
+            if (studentData.backlogs_data && typeof studentData.backlogs_data === 'object') {
+                Object.entries(studentData.backlogs_data).forEach(([k, v]) => {
+                    flattened[k] = v
+                })
+            }
+
+            setStudent(studentData)
+            reset(flattened)
         } catch (error) {
             console.error('Error fetching student details:', error)
             setMessage({
@@ -116,9 +156,9 @@ const StudentDetailsEditable = () => {
     }
 
     return (
-        <div className="max-w-6xl mx-auto">
+        <div className="max-w-7xl mx-auto p-4 md:p-6">
             {/* Header */}
-            <div className="mb-6">
+            <div className="mb-8">
                 <Link
                     to="/counsellor/students"
                     className="inline-flex items-center text-blue-600 hover:text-blue-700 mb-4"
@@ -127,13 +167,13 @@ const StudentDetailsEditable = () => {
                     Back to Students
                 </Link>
 
-                <div className="flex items-center justify-between">
+                <div className="flex items-start justify-between">
                     <div>
-                        <h1 className="text-2xl font-bold text-gray-900">
+                        <h1 className="text-3xl font-bold text-gray-900 mb-2">
                             {student.users?.name}
                         </h1>
-                        <p className="text-gray-600 mt-1">
-                            {student.roll_no} • {student.branch} - Year {student.year}
+                        <p className="text-gray-600">
+                            {student.roll_no} • {student.branch} • Year {student.year}
                         </p>
                     </div>
                     <button
@@ -144,31 +184,28 @@ const StudentDetailsEditable = () => {
                             setIsEditMode(!isEditMode)
                         }}
                         className={`flex items-center px-4 py-2 rounded-lg font-medium ${isEditMode
-                                ? 'bg-gray-200 text-gray-800 hover:bg-gray-300'
-                                : 'bg-blue-600 text-white hover:bg-blue-700'
+                            ? 'btn-secondary'
+                            : 'btn-primary'
                             }`}
                     >
                         {isEditMode ? (
                             <>
                                 <X className="w-4 h-4 mr-2" />
-                                Cancel
+                                Cancel Edit
                             </>
                         ) : (
                             <>
                                 <Edit2 className="w-4 h-4 mr-2" />
-                                Edit
+                                Edit Information
                             </>
                         )}
                     </button>
                 </div>
             </div>
 
-            {/* Message */}
+            {/* Message Alert */}
             {message.text && (
-                <div className={`mb-6 p-4 rounded-lg ${message.type === 'success'
-                        ? 'bg-green-100 text-green-800 border border-green-300'
-                        : 'bg-red-100 text-red-800 border border-red-300'
-                    }`}>
+                <div className={`mb-6 p-4 rounded-lg ${message.type === 'success' ? 'bg-green-50 border border-green-200 text-green-700' : 'bg-red-50 border border-red-200 text-red-700'}`}>
                     {message.text}
                 </div>
             )}
@@ -179,8 +216,8 @@ const StudentDetailsEditable = () => {
                     <button
                         onClick={() => setActiveTab('form')}
                         className={`py-4 px-1 border-b-2 font-medium text-sm ${activeTab === 'form'
-                                ? 'border-blue-500 text-blue-600'
-                                : 'border-transparent text-gray-500 hover:text-gray-700'
+                            ? 'border-blue-500 text-blue-600'
+                            : 'border-transparent text-gray-500 hover:text-gray-700'
                             }`}
                     >
                         Student Information
@@ -188,8 +225,8 @@ const StudentDetailsEditable = () => {
                     <button
                         onClick={() => setActiveTab('records')}
                         className={`py-4 px-1 border-b-2 font-medium text-sm ${activeTab === 'records'
-                                ? 'border-blue-500 text-blue-600'
-                                : 'border-transparent text-gray-500 hover:text-gray-700'
+                            ? 'border-blue-500 text-blue-600'
+                            : 'border-transparent text-gray-500 hover:text-gray-700'
                             }`}
                     >
                         Counselling Records ({counsellingRecords.length})
@@ -199,150 +236,144 @@ const StudentDetailsEditable = () => {
 
             {/* Form Tab */}
             {activeTab === 'form' && (
-                <form onSubmit={handleSubmit(onSubmit)} className="bg-white rounded-xl shadow">
-                    <div className="p-8 space-y-8">
-                        {/* Personal Information Section */}
-                        <div>
-                            <h3 className="text-xl font-semibold text-gray-900 mb-6">Personal Information</h3>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        Roll Number
-                                    </label>
-                                    <input
-                                        type="text"
-                                        {...register('roll_no')}
-                                        disabled={!isEditMode}
-                                        className={`w-full px-4 py-2 border rounded-lg ${isEditMode
-                                                ? 'border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500'
-                                                : 'border-gray-200 bg-gray-50 cursor-not-allowed'
-                                            }`}
-                                    />
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        Aadhar Number
-                                    </label>
-                                    <input
-                                        type="text"
-                                        {...register('aadhar_number')}
-                                        disabled={!isEditMode}
-                                        className={`w-full px-4 py-2 border rounded-lg ${isEditMode
-                                                ? 'border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500'
-                                                : 'border-gray-200 bg-gray-50 cursor-not-allowed'
-                                            }`}
-                                    />
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        Address
-                                    </label>
-                                    <input
-                                        type="text"
-                                        {...register('address')}
-                                        disabled={!isEditMode}
-                                        className={`w-full px-4 py-2 border rounded-lg ${isEditMode
-                                                ? 'border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500'
-                                                : 'border-gray-200 bg-gray-50 cursor-not-allowed'
-                                            }`}
-                                    />
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        Place
-                                    </label>
-                                    <input
-                                        type="text"
-                                        {...register('place')}
-                                        disabled={!isEditMode}
-                                        className={`w-full px-4 py-2 border rounded-lg ${isEditMode
-                                                ? 'border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500'
-                                                : 'border-gray-200 bg-gray-50 cursor-not-allowed'
-                                            }`}
-                                    />
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        District
-                                    </label>
-                                    <input
-                                        type="text"
-                                        {...register('district')}
-                                        disabled={!isEditMode}
-                                        className={`w-full px-4 py-2 border rounded-lg ${isEditMode
-                                                ? 'border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500'
-                                                : 'border-gray-200 bg-gray-50 cursor-not-allowed'
-                                            }`}
-                                    />
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        State
-                                    </label>
-                                    <input
-                                        type="text"
-                                        {...register('state')}
-                                        disabled={!isEditMode}
-                                        className={`w-full px-4 py-2 border rounded-lg ${isEditMode
-                                                ? 'border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500'
-                                                : 'border-gray-200 bg-gray-50 cursor-not-allowed'
-                                            }`}
-                                    />
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        Pincode
-                                    </label>
-                                    <input
-                                        type="text"
-                                        {...register('pincode')}
-                                        disabled={!isEditMode}
-                                        className={`w-full px-4 py-2 border rounded-lg ${isEditMode
-                                                ? 'border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500'
-                                                : 'border-gray-200 bg-gray-50 cursor-not-allowed'
-                                            }`}
-                                    />
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        Mobile Number
-                                    </label>
-                                    <input
-                                        type="text"
-                                        {...register('mobile')}
-                                        disabled={!isEditMode}
-                                        className={`w-full px-4 py-2 border rounded-lg ${isEditMode
-                                                ? 'border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500'
-                                                : 'border-gray-200 bg-gray-50 cursor-not-allowed'
-                                            }`}
-                                    />
-                                </div>
-                            </div>
+                <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
+                    {/* PERSONAL DETAILS */}
+                    <div className="card">
+                        <div className="flex items-center mb-6">
+                            <div className="w-3 h-6 bg-blue-600 rounded-r mr-3"></div>
+                            <h2 className="text-xl font-semibold text-gray-900">Personal Details</h2>
                         </div>
 
-                        {/* Family Information Section */}
-                        <div className="border-t pt-8">
-                            <h3 className="text-xl font-semibold text-gray-900 mb-6">Family Information</h3>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Roll No
+                                </label>
+                                <input
+                                    {...register("roll_no")}
+                                    readOnly
+                                    className="input-field bg-gray-50 cursor-not-allowed"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Name
+                                </label>
+                                <input
+                                    {...register("name")}
+                                    readOnly
+                                    value={student?.users?.name || ''}
+                                    className="input-field bg-gray-50 cursor-not-allowed"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Aadhar Number
+                                </label>
+                                <input
+                                    {...register("aadhar_number")}
+                                    className={`input-field ${!isEditMode ? 'bg-gray-50 cursor-not-allowed' : ''}`}
+                                    placeholder="Enter 12-digit Aadhar"
+                                    readOnly={!isEditMode}
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Place
+                                </label>
+                                <input
+                                    {...register("place")}
+                                    className={`input-field ${!isEditMode ? 'bg-gray-50 cursor-not-allowed' : ''}`}
+                                    placeholder="Enter your city/town"
+                                    readOnly={!isEditMode}
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    District
+                                </label>
+                                <input
+                                    {...register("district")}
+                                    className={`input-field ${!isEditMode ? 'bg-gray-50 cursor-not-allowed' : ''}`}
+                                    placeholder="Enter district"
+                                    readOnly={!isEditMode}
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    State
+                                </label>
+                                <input
+                                    {...register("state")}
+                                    className={`input-field ${!isEditMode ? 'bg-gray-50 cursor-not-allowed' : ''}`}
+                                    placeholder="Enter state"
+                                    readOnly={!isEditMode}
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Pincode
+                                </label>
+                                <input
+                                    {...register("pincode")}
+                                    className={`input-field ${!isEditMode ? 'bg-gray-50 cursor-not-allowed' : ''}`}
+                                    placeholder="Enter 6-digit pincode"
+                                    readOnly={!isEditMode}
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Mobile Number
+                                </label>
+                                <input
+                                    {...register("mobile")}
+                                    className={`input-field ${!isEditMode ? 'bg-gray-50 cursor-not-allowed' : ''}`}
+                                    placeholder="Enter mobile number"
+                                    readOnly={!isEditMode}
+                                />
+                            </div>
+
+                            <div className="md:col-span-2 lg:col-span-3">
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Address
+                                </label>
+                                <textarea
+                                    {...register("address")}
+                                    className={`input-field min-h-[100px] ${!isEditMode ? 'bg-gray-50 cursor-not-allowed' : ''}`}
+                                    placeholder="Enter your complete address"
+                                    readOnly={!isEditMode}
+                                />
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* PARENT DETAILS */}
+                    <div className="card">
+                        <div className="flex items-center mb-6">
+                            <div className="w-3 h-6 bg-green-600 rounded-r mr-3"></div>
+                            <h2 className="text-xl font-semibold text-gray-900">Parent Details</h2>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {/* Father Details */}
+                            <div className="space-y-4 p-4 bg-blue-50 rounded-lg">
+                                <h3 className="font-medium text-blue-900">Father's Details</h3>
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-2">
                                         Father's Name
                                     </label>
                                     <input
-                                        type="text"
-                                        {...register('father_name')}
-                                        disabled={!isEditMode}
-                                        className={`w-full px-4 py-2 border rounded-lg ${isEditMode
-                                                ? 'border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500'
-                                                : 'border-gray-200 bg-gray-50 cursor-not-allowed'
-                                            }`}
+                                        {...register("father_name")}
+                                        className={`input-field ${!isEditMode ? 'bg-gray-50 cursor-not-allowed' : ''}`}
+                                        placeholder="Enter father's name"
+                                        readOnly={!isEditMode}
                                     />
                                 </div>
 
@@ -351,13 +382,10 @@ const StudentDetailsEditable = () => {
                                         Father's Mobile
                                     </label>
                                     <input
-                                        type="text"
-                                        {...register('father_mobile')}
-                                        disabled={!isEditMode}
-                                        className={`w-full px-4 py-2 border rounded-lg ${isEditMode
-                                                ? 'border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500'
-                                                : 'border-gray-200 bg-gray-50 cursor-not-allowed'
-                                            }`}
+                                        {...register("father_mobile")}
+                                        className={`input-field ${!isEditMode ? 'bg-gray-50 cursor-not-allowed' : ''}`}
+                                        placeholder="Enter 10-digit mobile number"
+                                        readOnly={!isEditMode}
                                     />
                                 </div>
 
@@ -365,29 +393,33 @@ const StudentDetailsEditable = () => {
                                     <label className="block text-sm font-medium text-gray-700 mb-2">
                                         Father's Occupation
                                     </label>
-                                    <input
-                                        type="text"
-                                        {...register('father_occupation')}
+                                    <select
+                                        {...register("father_occupation")}
+                                        className={`input-field ${!isEditMode ? 'bg-gray-50 cursor-not-allowed' : ''}`}
                                         disabled={!isEditMode}
-                                        className={`w-full px-4 py-2 border rounded-lg ${isEditMode
-                                                ? 'border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500'
-                                                : 'border-gray-200 bg-gray-50 cursor-not-allowed'
-                                            }`}
-                                    />
+                                    >
+                                        <option value="">Select occupation</option>
+                                        {occupationOptions.map((occupation) => (
+                                            <option key={occupation} value={occupation}>
+                                                {occupation}
+                                            </option>
+                                        ))}
+                                    </select>
                                 </div>
+                            </div>
 
+                            {/* Mother Details */}
+                            <div className="space-y-4 p-4 bg-purple-50 rounded-lg">
+                                <h3 className="font-medium text-purple-900">Mother's Details</h3>
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-2">
                                         Mother's Name
                                     </label>
                                     <input
-                                        type="text"
-                                        {...register('mother_name')}
-                                        disabled={!isEditMode}
-                                        className={`w-full px-4 py-2 border rounded-lg ${isEditMode
-                                                ? 'border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500'
-                                                : 'border-gray-200 bg-gray-50 cursor-not-allowed'
-                                            }`}
+                                        {...register("mother_name")}
+                                        className={`input-field ${!isEditMode ? 'bg-gray-50 cursor-not-allowed' : ''}`}
+                                        placeholder="Enter mother's name"
+                                        readOnly={!isEditMode}
                                     />
                                 </div>
 
@@ -396,13 +428,10 @@ const StudentDetailsEditable = () => {
                                         Mother's Mobile
                                     </label>
                                     <input
-                                        type="text"
-                                        {...register('mother_mobile')}
-                                        disabled={!isEditMode}
-                                        className={`w-full px-4 py-2 border rounded-lg ${isEditMode
-                                                ? 'border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500'
-                                                : 'border-gray-200 bg-gray-50 cursor-not-allowed'
-                                            }`}
+                                        {...register("mother_mobile")}
+                                        className={`input-field ${!isEditMode ? 'bg-gray-50 cursor-not-allowed' : ''}`}
+                                        placeholder="Enter 10-digit mobile number"
+                                        readOnly={!isEditMode}
                                     />
                                 </div>
 
@@ -410,149 +439,122 @@ const StudentDetailsEditable = () => {
                                     <label className="block text-sm font-medium text-gray-700 mb-2">
                                         Mother's Occupation
                                     </label>
-                                    <input
-                                        type="text"
-                                        {...register('mother_occupation')}
-                                        disabled={!isEditMode}
-                                        className={`w-full px-4 py-2 border rounded-lg ${isEditMode
-                                                ? 'border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500'
-                                                : 'border-gray-200 bg-gray-50 cursor-not-allowed'
-                                            }`}
-                                    />
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Fee Information Section */}
-                        <div className="border-t pt-8">
-                            <h3 className="text-xl font-semibold text-gray-900 mb-6">Fee Information</h3>
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        Tuition RTF
-                                    </label>
-                                    <input
-                                        type="number"
-                                        {...register('tuition_rtf')}
-                                        disabled={!isEditMode}
-                                        className={`w-full px-4 py-2 border rounded-lg ${isEditMode
-                                                ? 'border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500'
-                                                : 'border-gray-200 bg-gray-50 cursor-not-allowed'
-                                            }`}
-                                    />
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        Tuition MQ
-                                    </label>
-                                    <input
-                                        type="number"
-                                        {...register('tuition_mq')}
-                                        disabled={!isEditMode}
-                                        className={`w-full px-4 py-2 border rounded-lg ${isEditMode
-                                                ? 'border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500'
-                                                : 'border-gray-200 bg-gray-50 cursor-not-allowed'
-                                            }`}
-                                    />
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        Tuition NRTF
-                                    </label>
-                                    <input
-                                        type="number"
-                                        {...register('tuition_nrtf')}
-                                        disabled={!isEditMode}
-                                        className={`w-full px-4 py-2 border rounded-lg ${isEditMode
-                                                ? 'border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500'
-                                                : 'border-gray-200 bg-gray-50 cursor-not-allowed'
-                                            }`}
-                                    />
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        Hostel Fee
-                                    </label>
-                                    <input
-                                        type="number"
-                                        {...register('hostel_fee')}
-                                        disabled={!isEditMode}
-                                        className={`w-full px-4 py-2 border rounded-lg ${isEditMode
-                                                ? 'border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500'
-                                                : 'border-gray-200 bg-gray-50 cursor-not-allowed'
-                                            }`}
-                                    />
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        Bus Fee
-                                    </label>
-                                    <input
-                                        type="number"
-                                        {...register('bus_fee')}
-                                        disabled={!isEditMode}
-                                        className={`w-full px-4 py-2 border rounded-lg ${isEditMode
-                                                ? 'border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500'
-                                                : 'border-gray-200 bg-gray-50 cursor-not-allowed'
-                                            }`}
-                                    />
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        Concession
-                                    </label>
-                                    <input
-                                        type="number"
-                                        {...register('concession')}
-                                        disabled={!isEditMode}
-                                        className={`w-full px-4 py-2 border rounded-lg ${isEditMode
-                                                ? 'border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500'
-                                                : 'border-gray-200 bg-gray-50 cursor-not-allowed'
-                                            }`}
-                                    />
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Accommodation Section */}
-                        <div className="border-t pt-8">
-                            <h3 className="text-xl font-semibold text-gray-900 mb-6">Accommodation Details</h3>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        Residence Type
-                                    </label>
                                     <select
-                                        {...register('residence')}
+                                        {...register("mother_occupation")}
+                                        className={`input-field ${!isEditMode ? 'bg-gray-50 cursor-not-allowed' : ''}`}
                                         disabled={!isEditMode}
-                                        className={`w-full px-4 py-2 border rounded-lg ${isEditMode
-                                                ? 'border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500'
-                                                : 'border-gray-200 bg-gray-50 cursor-not-allowed'
-                                            }`}
                                     >
-                                        <option value="">Select...</option>
-                                        <option value="Hosteller">Hosteller</option>
-                                        <option value="Dayscholar">Dayscholar</option>
+                                        <option value="">Select occupation</option>
+                                        {occupationOptions.map((occupation) => (
+                                            <option key={occupation} value={occupation}>
+                                                {occupation}
+                                            </option>
+                                        ))}
                                     </select>
                                 </div>
+                            </div>
+                        </div>
+                    </div>
 
+                    {/* FEE DETAILS */}
+                    <div className="card">
+                        <div className="flex items-center mb-6">
+                            <div className="w-3 h-6 bg-amber-600 rounded-r mr-3"></div>
+                            <h2 className="text-xl font-semibold text-gray-900">Fee Details</h2>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Tuition Fee (RTF)
+                                </label>
+                                <input
+                                    {...register("tuition_rtf")}
+                                    type="number"
+                                    step="0.01"
+                                    className={`input-field ${!isEditMode ? 'bg-gray-50 cursor-not-allowed' : ''}`}
+                                    placeholder="0.00"
+                                    readOnly={!isEditMode}
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Tuition Fee (MQ)
+                                </label>
+                                <input
+                                    {...register("tuition_mq")}
+                                    type="number"
+                                    step="0.01"
+                                    className={`input-field ${!isEditMode ? 'bg-gray-50 cursor-not-allowed' : ''}`}
+                                    placeholder="0.00"
+                                    readOnly={!isEditMode}
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Tuition Fee (NRTF)
+                                </label>
+                                <input
+                                    {...register("tuition_nrtf")}
+                                    type="number"
+                                    step="0.01"
+                                    className={`input-field ${!isEditMode ? 'bg-gray-50 cursor-not-allowed' : ''}`}
+                                    placeholder="0.00"
+                                    readOnly={!isEditMode}
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Concession
+                                </label>
+                                <input
+                                    {...register("concession")}
+                                    type="number"
+                                    step="0.01"
+                                    className={`input-field ${!isEditMode ? 'bg-gray-50 cursor-not-allowed' : ''}`}
+                                    placeholder="0.00"
+                                    readOnly={!isEditMode}
+                                />
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* RESIDENCE DETAILS */}
+                    <div className="card">
+                        <div className="flex items-center mb-6">
+                            <div className="w-3 h-6 bg-indigo-600 rounded-r mr-3"></div>
+                            <h2 className="text-xl font-semibold text-gray-900">Residence Details</h2>
+                        </div>
+
+                        <div className="space-y-6">
+                            <div className="flex flex-wrap gap-6">
+                                {residenceOptions.map((option) => (
+                                    <label key={option.value} className="flex items-center space-x-2 cursor-pointer">
+                                        <input
+                                            type="radio"
+                                            value={option.value}
+                                            {...register("residence")}
+                                            className="h-4 w-4 text-blue-600"
+                                            disabled={!isEditMode}
+                                        />
+                                        <span className="text-gray-700">{option.label}</span>
+                                    </label>
+                                ))}
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-2">
                                         Hostel Name
                                     </label>
                                     <input
-                                        type="text"
-                                        {...register('hostel_name')}
-                                        disabled={!isEditMode}
-                                        className={`w-full px-4 py-2 border rounded-lg ${isEditMode
-                                                ? 'border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500'
-                                                : 'border-gray-200 bg-gray-50 cursor-not-allowed'
-                                            }`}
+                                        {...register("hostel_name")}
+                                        className={`input-field ${!isEditMode ? 'bg-gray-50 cursor-not-allowed' : ''}`}
+                                        placeholder="Enter hostel name"
+                                        readOnly={!isEditMode}
                                     />
                                 </div>
 
@@ -561,237 +563,285 @@ const StudentDetailsEditable = () => {
                                         Hostel Admission Date
                                     </label>
                                     <input
+                                        {...register("hostel_admission_date")}
                                         type="date"
-                                        {...register('hostel_admission_date')}
-                                        disabled={!isEditMode}
-                                        className={`w-full px-4 py-2 border rounded-lg ${isEditMode
-                                                ? 'border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500'
-                                                : 'border-gray-200 bg-gray-50 cursor-not-allowed'
-                                            }`}
+                                        className={`input-field ${!isEditMode ? 'bg-gray-50 cursor-not-allowed' : ''}`}
+                                        readOnly={!isEditMode}
                                     />
                                 </div>
 
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        Hostel Balance
+                                        Hostel Fee (₹)
                                     </label>
                                     <input
+                                        {...register("hostel_fee")}
                                         type="number"
-                                        {...register('hostel_balance')}
-                                        disabled={!isEditMode}
-                                        className={`w-full px-4 py-2 border rounded-lg ${isEditMode
-                                                ? 'border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500'
-                                                : 'border-gray-200 bg-gray-50 cursor-not-allowed'
-                                            }`}
+                                        step="0.01"
+                                        className={`input-field ${!isEditMode ? 'bg-gray-50 cursor-not-allowed' : ''}`}
+                                        placeholder="0.00"
+                                        readOnly={!isEditMode}
                                     />
                                 </div>
 
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        Bus Number
+                                        Balance Hostel Fee (₹)
                                     </label>
                                     <input
-                                        type="text"
-                                        {...register('bus_no')}
-                                        disabled={!isEditMode}
-                                        className={`w-full px-4 py-2 border rounded-lg ${isEditMode
-                                                ? 'border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500'
-                                                : 'border-gray-200 bg-gray-50 cursor-not-allowed'
-                                            }`}
-                                    />
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        Bus Route
-                                    </label>
-                                    <input
-                                        type="text"
-                                        {...register('bus_route')}
-                                        disabled={!isEditMode}
-                                        className={`w-full px-4 py-2 border rounded-lg ${isEditMode
-                                                ? 'border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500'
-                                                : 'border-gray-200 bg-gray-50 cursor-not-allowed'
-                                            }`}
-                                    />
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        Bus Balance
-                                    </label>
-                                    <input
+                                        {...register("hostel_balance")}
                                         type="number"
-                                        {...register('bus_balance')}
-                                        disabled={!isEditMode}
-                                        className={`w-full px-4 py-2 border rounded-lg ${isEditMode
-                                                ? 'border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500'
-                                                : 'border-gray-200 bg-gray-50 cursor-not-allowed'
-                                            }`}
+                                        step="0.01"
+                                        className={`input-field ${!isEditMode ? 'bg-gray-50 cursor-not-allowed' : ''}`}
+                                        placeholder="0.00"
+                                        readOnly={!isEditMode}
                                     />
                                 </div>
                             </div>
                         </div>
+                    </div>
 
-                        {/* Academic Section */}
-                        <div className="border-t pt-8">
-                            <h3 className="text-xl font-semibold text-gray-900 mb-6">Academic Information</h3>
+                    {/* BUS DETAILS */}
+                    <div className="card">
+                        <div className="flex items-center mb-6">
+                            <div className="w-3 h-6 bg-teal-600 rounded-r mr-3"></div>
+                            <h2 className="text-xl font-semibold text-gray-900">Transport Details</h2>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Bus Number
+                                </label>
+                                <input
+                                    {...register("bus_no")}
+                                    className={`input-field ${!isEditMode ? 'bg-gray-50 cursor-not-allowed' : ''}`}
+                                    placeholder="Enter bus number"
+                                    readOnly={!isEditMode}
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Bus Route
+                                </label>
+                                <input
+                                    {...register("bus_route")}
+                                    className={`input-field ${!isEditMode ? 'bg-gray-50 cursor-not-allowed' : ''}`}
+                                    placeholder="Enter bus route"
+                                    readOnly={!isEditMode}
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Bus Fee (₹)
+                                </label>
+                                <input
+                                    {...register("bus_fee")}
+                                    type="number"
+                                    step="0.01"
+                                    className={`input-field ${!isEditMode ? 'bg-gray-50 cursor-not-allowed' : ''}`}
+                                    placeholder="0.00"
+                                    readOnly={!isEditMode}
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Balance Bus Fee (₹)
+                                </label>
+                                <input
+                                    {...register("bus_balance")}
+                                    type="number"
+                                    step="0.01"
+                                    className={`input-field ${!isEditMode ? 'bg-gray-50 cursor-not-allowed' : ''}`}
+                                    placeholder="0.00"
+                                    readOnly={!isEditMode}
+                                />
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* ACADEMIC PERFORMANCE - ATTENDANCE & BACKLOGS */}
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        {/* ATTENDANCE */}
+                        <div className="card">
+                            <div className="flex items-center mb-6">
+                                <div className="w-3 h-6 bg-emerald-600 rounded-r mr-3"></div>
+                                <h2 className="text-xl font-semibold text-gray-900">Attendance (%)</h2>
+                            </div>
+
+                            <div className="space-y-4">
+                                {academicYears.map((year) => (
+                                    <div key={year} className="space-y-3">
+                                        <h3 className="font-medium text-gray-700">{year} Year</h3>
+                                        <div className="grid grid-cols-2 gap-4">
+                                            {semesters.map((sem) => (
+                                                <div key={sem}>
+                                                    <label className="block text-sm text-gray-600 mb-2">
+                                                        Semester {sem}
+                                                    </label>
+                                                    <input
+                                                        {...register(`attendance_${year}_sem${sem}`)}
+                                                        type="number"
+                                                        step="0.01"
+                                                        min="0"
+                                                        max="100"
+                                                        className={`input-field ${!isEditMode ? 'bg-gray-50 cursor-not-allowed' : ''}`}
+                                                        placeholder={`${year}-${sem} Sem`}
+                                                        readOnly={!isEditMode}
+                                                    />
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* BACKLOGS */}
+                        <div className="card">
+                            <div className="flex items-center mb-6">
+                                <div className="w-3 h-6 bg-red-600 rounded-r mr-3"></div>
+                                <h2 className="text-xl font-semibold text-gray-900">Academic Backlogs</h2>
+                            </div>
+
+                            <div className="space-y-4">
+                                {academicYears.map((year) => (
+                                    <div key={year} className="space-y-3">
+                                        <h3 className="font-medium text-gray-700">{year} Year</h3>
+                                        <div className="grid grid-cols-2 gap-4">
+                                            {semesters.map((sem) => (
+                                                <div key={sem}>
+                                                    <label className="block text-sm text-gray-600 mb-2">
+                                                        Semester {sem}
+                                                    </label>
+                                                    <input
+                                                        {...register(`backlogs_${year}_sem${sem}`)}
+                                                        type="number"
+                                                        min="0"
+                                                        className={`input-field ${!isEditMode ? 'bg-gray-50 cursor-not-allowed' : ''}`}
+                                                        placeholder={`${year}-${sem} Sem`}
+                                                        readOnly={!isEditMode}
+                                                    />
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* EXTRA DETAILS */}
+                    <div className="card">
+                        <div className="flex items-center mb-6">
+                            <div className="w-3 h-6 bg-purple-600 rounded-r mr-3"></div>
+                            <h2 className="text-xl font-semibold text-gray-900">Additional Information</h2>
+                        </div>
+
+                        <div className="space-y-6">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        Attendance Percentage
-                                    </label>
-                                    <input
-                                        type="number"
-                                        {...register('attendance_percentage')}
-                                        disabled={!isEditMode}
-                                        className={`w-full px-4 py-2 border rounded-lg ${isEditMode
-                                                ? 'border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500'
-                                                : 'border-gray-200 bg-gray-50 cursor-not-allowed'
-                                            }`}
-                                    />
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        Backlogs
-                                    </label>
-                                    <input
-                                        type="number"
-                                        {...register('backlogs')}
-                                        disabled={!isEditMode}
-                                        className={`w-full px-4 py-2 border rounded-lg ${isEditMode
-                                                ? 'border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500'
-                                                : 'border-gray-200 bg-gray-50 cursor-not-allowed'
-                                            }`}
-                                    />
-                                </div>
-
-                                <div className="md:col-span-2">
                                     <label className="block text-sm font-medium text-gray-700 mb-2">
                                         CSP Project Title
                                     </label>
                                     <input
-                                        type="text"
-                                        {...register('csp_project_title')}
-                                        disabled={!isEditMode}
-                                        className={`w-full px-4 py-2 border rounded-lg ${isEditMode
-                                                ? 'border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500'
-                                                : 'border-gray-200 bg-gray-50 cursor-not-allowed'
-                                            }`}
+                                        {...register("csp_project")}
+                                        className={`input-field ${!isEditMode ? 'bg-gray-50 cursor-not-allowed' : ''}`}
+                                        placeholder="Enter project title"
+                                        readOnly={!isEditMode}
                                     />
                                 </div>
 
-                                <div className="md:col-span-2">
+                                <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        Project Guide
+                                        Guide Name
                                     </label>
                                     <input
-                                        type="text"
-                                        {...register('project_guide')}
-                                        disabled={!isEditMode}
-                                        className={`w-full px-4 py-2 border rounded-lg ${isEditMode
-                                                ? 'border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500'
-                                                : 'border-gray-200 bg-gray-50 cursor-not-allowed'
-                                            }`}
+                                        {...register("guide")}
+                                        className={`input-field ${!isEditMode ? 'bg-gray-50 cursor-not-allowed' : ''}`}
+                                        placeholder="Enter guide name"
+                                        readOnly={!isEditMode}
                                     />
                                 </div>
+                            </div>
 
-                                <div className="md:col-span-2">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-2">
                                         Internship Details
                                     </label>
-                                    <textarea
-                                        {...register('internship_details')}
-                                        disabled={!isEditMode}
-                                        rows="3"
-                                        className={`w-full px-4 py-2 border rounded-lg ${isEditMode
-                                                ? 'border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500'
-                                                : 'border-gray-200 bg-gray-50 cursor-not-allowed'
-                                            }`}
+                                    <input
+                                        {...register("internship")}
+                                        className={`input-field ${!isEditMode ? 'bg-gray-50 cursor-not-allowed' : ''}`}
+                                        placeholder="Enter internship details"
+                                        readOnly={!isEditMode}
                                     />
                                 </div>
 
-                                <div className="md:col-span-2">
+                                <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        MOOCs Courses
+                                        MOOCs Course
                                     </label>
-                                    <textarea
-                                        {...register('moocs_courses')}
-                                        disabled={!isEditMode}
-                                        rows="3"
-                                        className={`w-full px-4 py-2 border rounded-lg ${isEditMode
-                                                ? 'border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500'
-                                                : 'border-gray-200 bg-gray-50 cursor-not-allowed'
-                                            }`}
+                                    <input
+                                        {...register("moocs")}
+                                        className={`input-field ${!isEditMode ? 'bg-gray-50 cursor-not-allowed' : ''}`}
+                                        placeholder="Enter MOOCs course"
+                                        readOnly={!isEditMode}
                                     />
                                 </div>
+                            </div>
 
-                                <div className="md:col-span-2">
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        Extra Activities
-                                    </label>
-                                    <textarea
-                                        {...register('extra_activities')}
-                                        disabled={!isEditMode}
-                                        rows="3"
-                                        className={`w-full px-4 py-2 border rounded-lg ${isEditMode
-                                                ? 'border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500'
-                                                : 'border-gray-200 bg-gray-50 cursor-not-allowed'
-                                            }`}
-                                    />
-                                </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Extra Activities
+                                </label>
+                                <textarea
+                                    {...register("extra_activities")}
+                                    className={`input-field min-h-[100px] ${!isEditMode ? 'bg-gray-50 cursor-not-allowed' : ''}`}
+                                    placeholder="Enter any extracurricular activities, achievements, etc."
+                                    readOnly={!isEditMode}
+                                />
+                            </div>
 
-                                <div className="md:col-span-2">
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        Remarks
-                                    </label>
-                                    <textarea
-                                        {...register('remarks')}
-                                        disabled={!isEditMode}
-                                        rows="3"
-                                        className={`w-full px-4 py-2 border rounded-lg ${isEditMode
-                                                ? 'border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500'
-                                                : 'border-gray-200 bg-gray-50 cursor-not-allowed'
-                                            }`}
-                                    />
-                                </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Remarks
+                                </label>
+                                <textarea
+                                    {...register("remarks")}
+                                    className={`input-field min-h-[100px] ${!isEditMode ? 'bg-gray-50 cursor-not-allowed' : ''}`}
+                                    placeholder="Enter remarks"
+                                    readOnly={!isEditMode}
+                                />
                             </div>
                         </div>
-
-                        {/* Save Button */}
-                        {isEditMode && (
-                            <div className="border-t pt-8 flex justify-end gap-4">
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        reset(student)
-                                        setIsEditMode(false)
-                                    }}
-                                    className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    type="submit"
-                                    disabled={saving}
-                                    className="flex items-center px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400"
-                                >
-                                    {saving ? (
-                                        <>
-                                            <Loader className="w-4 h-4 mr-2 animate-spin" />
-                                            Saving...
-                                        </>
-                                    ) : (
-                                        <>
-                                            <Save className="w-4 h-4 mr-2" />
-                                            Save Changes
-                                        </>
-                                    )}
-                                </button>
-                            </div>
-                        )}
                     </div>
+
+                    {/* Save Button */}
+                    {isEditMode && (
+                        <div className="flex justify-end sticky bottom-6 bg-white/90 backdrop-blur-sm p-4 rounded-lg shadow-lg">
+                            <button
+                                type="submit"
+                                disabled={saving}
+                                className="btn-primary flex items-center space-x-2 px-8 py-3 text-lg"
+                            >
+                                {saving ? (
+                                    <>
+                                        <Loader className="w-5 h-5 animate-spin" />
+                                        <span>Saving...</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <Save className="w-5 h-5" />
+                                        <span>Save Changes</span>
+                                    </>
+                                )}
+                            </button>
+                        </div>
+                    )}
                 </form>
             )}
 
@@ -813,7 +863,7 @@ const CounsellingRecordsTab = ({ records, studentId, onRefresh }) => {
 
     if (records.length === 0) {
         return (
-            <div className="text-center py-12 bg-white rounded-xl shadow">
+            <div className="text-center py-12 card">
                 <FileText className="h-12 w-12 text-gray-300 mx-auto mb-4" />
                 <h3 className="text-lg font-medium text-gray-900 mb-2">No counselling records found</h3>
                 <p className="text-gray-600 mb-6">
@@ -824,22 +874,43 @@ const CounsellingRecordsTab = ({ records, studentId, onRefresh }) => {
     }
 
     return (
-        <div className="bg-white rounded-xl shadow overflow-hidden">
-            <div className="divide-y divide-gray-200">
-                {records.map((record) => (
-                    <div key={record.id} className="p-6 hover:bg-gray-50">
-                        <div className="flex justify-between items-start">
+        <div className="card">
+            <div className="flex items-center mb-6">
+                <div className="w-3 h-6 bg-pink-600 rounded-r mr-3"></div>
+                <h2 className="text-xl font-semibold text-gray-900">Counselling Sessions</h2>
+            </div>
+
+            <div className="space-y-4">
+                {records.map((record, index) => (
+                    <div
+                        key={record.id}
+                        className="bg-white border border-gray-200 rounded-lg p-6 hover:bg-gray-50 transition"
+                    >
+                        <div className="flex justify-between items-start mb-4">
                             <div>
-                                <h4 className="font-medium text-gray-900">
-                                    Session on {new Date(record.counselling_date).toLocaleDateString()}
+                                <h4 className="font-medium text-gray-900 text-lg">
+                                    Session {index + 1}
                                 </h4>
-                                <p className="text-sm text-gray-600 mt-1">
-                                    {record.remarks || 'No remarks'}
-                                </p>
+                                <div className="flex items-center text-gray-600 mt-1">
+                                    <Calendar className="w-4 h-4 mr-2" />
+                                    <span>{new Date(record.counselling_date).toLocaleDateString('en-IN', {
+                                        weekday: 'long',
+                                        year: 'numeric',
+                                        month: 'long',
+                                        day: 'numeric'
+                                    })}</span>
+                                </div>
                             </div>
                             <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                                 Recorded
                             </span>
+                        </div>
+
+                        <div className="bg-gray-50 p-4 rounded-lg">
+                            <h5 className="font-medium text-gray-700 mb-2">Remarks:</h5>
+                            <p className="text-gray-700 whitespace-pre-wrap">
+                                {record.remarks || 'No remarks provided for this session.'}
+                            </p>
                         </div>
                     </div>
                 ))}
@@ -847,5 +918,24 @@ const CounsellingRecordsTab = ({ records, studentId, onRefresh }) => {
         </div>
     )
 }
+
+// Add CSS classes (add these to your global CSS or component styles)
+const styles = `
+.input-field {
+    @apply w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition;
+}
+
+.btn-primary {
+    @apply bg-blue-600 text-white hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition font-medium;
+}
+
+.btn-secondary {
+    @apply bg-gray-200 text-gray-800 hover:bg-gray-300 disabled:bg-gray-100 disabled:cursor-not-allowed transition font-medium;
+}
+
+.card {
+    @apply bg-white rounded-xl shadow-sm border border-gray-200 p-6;
+}
+`
 
 export default StudentDetailsEditable

@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from "react"
-import { useForm, useFieldArray } from "react-hook-form"
+import { useForm, useFieldArray, useWatch } from "react-hook-form"
 import axios from "axios"
 import { Save, Loader, Plus, Trash2, Calendar, MessageSquare } from "lucide-react"
 
 const CounsellingForm = () => {
     const { register, handleSubmit, reset, control, formState: { errors } } = useForm()
+    const residenceValue = useWatch({ control, name: 'residence' })
 
     const { fields, append, remove } = useFieldArray({
         control,
@@ -12,6 +13,7 @@ const CounsellingForm = () => {
     })
 
     const [loading, setLoading] = useState(false)
+    const [refreshing, setRefreshing] = useState(false)
     const [message, setMessage] = useState({ type: '', text: '' })
     const [studentData, setStudentData] = useState(null)
     const [isSubmitted, setIsSubmitted] = useState(false)
@@ -29,21 +31,31 @@ const CounsellingForm = () => {
         fetchStudentData()
     }, [])
 
+    // Effect to reset form when studentData changes
+    useEffect(() => {
+        if (studentData) {
+            console.log('Resetting form with studentData:', studentData)
+            console.log('Residence value from DB:', studentData.residence)
+            reset({
+                ...studentData,
+                // Ensure residence is properly set
+                residence: studentData.residence || ''
+            })
+        }
+    }, [studentData, reset])
+
     const fetchStudentData = async () => {
         try {
             console.log('Fetching student profile...')
             const response = await axios.get("/api/student/profile")
             console.log('Profile response:', response.data)
+            console.log('Residence from response:', response.data.residence)
             setStudentData(response.data)
 
             // Check if any counselling form fields are filled
             const hasFilledFields = checkIfFormFilled(response.data)
             setIsFilled(hasFilledFields)
             setIsSubmitted(hasFilledFields)
-
-            if (response.data) {
-                reset(response.data)
-            }
         } catch (error) {
             console.error("Error fetching student data:", error)
             console.error("Error response data:", error.response?.data)
@@ -61,11 +73,33 @@ const CounsellingForm = () => {
         // Check for any non-empty counselling-related fields
         const counsellingFields = [
             'aadhar_number', 'place', 'district', 'state', 'pincode', 'address', 'mobile',
-            'father_name', 'mother_name', 'father_mobile', 'mother_mobile',
-            'residence', 'hostel_name', 'hostel_fee', 'bus_no', 'bus_route', 'bus_fee',
-            'tuition_fee', 'concession', 'balance_fee', 'attendance_percentage'
+            'father_name', 'mother_name', 'father_mobile', 'mother_mobile', 'father_occupation', 'mother_occupation',
+            'residence', 'hostel_name', 'hostel_admission_date', 'hostel_fee', 'hostel_balance',
+            'bus_no', 'bus_route', 'bus_fee', 'bus_balance',
+            'tuition_rtf', 'tuition_mq', 'tuition_nrtf', 'concession', 'balance_fee', 'attendance_percentage',
+            'csp_project_title', 'project_guide', 'internship_details', 'moocs_courses', 'extra_activities', 'remarks'
         ]
         return counsellingFields.some(field => data[field] !== null && data[field] !== undefined && data[field] !== '')
+    }
+
+    const handleRefresh = async () => {
+        setRefreshing(true)
+        setMessage({ type: '', text: '' })
+        try {
+            await fetchStudentData()
+            setMessage({
+                type: 'success',
+                text: 'Data refreshed! Any updates from your counsellor are now visible.'
+            })
+            setTimeout(() => setMessage({ type: '', text: '' }), 3000)
+        } catch (error) {
+            setMessage({
+                type: 'error',
+                text: 'Failed to refresh data. Please try again.'
+            })
+        } finally {
+            setRefreshing(false)
+        }
     }
 
     const onSubmit = async (data) => {
@@ -154,10 +188,20 @@ const CounsellingForm = () => {
 
     return (
         <div className="max-w-7xl mx-auto p-4 md:p-6">
-            {/* Header */}
-            <div className="mb-8">
-                <h1 className="text-3xl font-bold text-gray-900 mb-2">Counselling Information Form</h1>
-                <p className="text-gray-600">Complete your personal, academic, and counselling details</p>
+            {/* Header with Refresh Button */}
+            <div className="mb-8 flex items-start justify-between">
+                <div>
+                    <h1 className="text-3xl font-bold text-gray-900 mb-2">Counselling Information Form</h1>
+                    <p className="text-gray-600">Complete your personal, academic, and counselling details</p>
+                </div>
+                <button
+                    onClick={handleRefresh}
+                    disabled={refreshing}
+                    className="px-4 py-2 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-lg text-sm font-medium transition disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                    title="Refresh to see updates from your counsellor"
+                >
+                    {refreshing ? 'Refreshing...' : '↻ Refresh'}
+                </button>
             </div>
 
 
@@ -512,6 +556,7 @@ const CounsellingForm = () => {
                                         type="radio"
                                         value={option.value}
                                         {...register("residence")}
+                                        checked={residenceValue === option.value}
                                         className="h-4 w-4 text-blue-600"
                                         disabled={isSubmitted}
                                     />
