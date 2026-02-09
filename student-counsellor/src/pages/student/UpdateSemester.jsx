@@ -68,8 +68,8 @@ const UpdateSemester = () => {
                 text: 'Semester updated successfully! Counsellor assigned.'
             })
 
-            // Reset counsellors list
-            setCounsellors([])
+            // Refresh counsellors list to reflect updated counts and availability
+            await fetchCounsellors()
         } catch (error) {
             setMessage({
                 type: 'error',
