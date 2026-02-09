@@ -36,11 +36,40 @@ const CounsellingForm = () => {
         if (studentData) {
             console.log('Resetting form with studentData:', studentData)
             console.log('Residence value from DB:', studentData.residence)
-            reset({
+
+            // Flatten JSONB fields and map DB column names to form field names
+            const formData = {
                 ...studentData,
+                // Map DB columns to form field names
+                csp_project: studentData.csp_project_title || '',
+                guide: studentData.project_guide || '',
+                internship: studentData.internship_details || '',
+                moocs: studentData.moocs_courses || '',
+                aadhar: studentData.aadhar_number || '',
+                father_occupation: studentData.father_occupation || '',
+                mother_occupation: studentData.mother_occupation || '',
                 // Ensure residence is properly set
                 residence: studentData.residence || ''
-            })
+            }
+
+            // Flatten attendance_data JSONB into individual fields
+            if (studentData.attendance_data && typeof studentData.attendance_data === 'object') {
+                console.log('Flattening attendance_data:', studentData.attendance_data)
+                Object.entries(studentData.attendance_data).forEach(([key, value]) => {
+                    formData[key] = value
+                })
+            }
+
+            // Flatten backlogs_data JSONB into individual fields
+            if (studentData.backlogs_data && typeof studentData.backlogs_data === 'object') {
+                console.log('Flattening backlogs_data:', studentData.backlogs_data)
+                Object.entries(studentData.backlogs_data).forEach(([key, value]) => {
+                    formData[key] = value
+                })
+            }
+
+            console.log('Form data after flattening:', formData)
+            reset(formData)
         }
     }, [studentData, reset])
 
