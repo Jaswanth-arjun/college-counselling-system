@@ -34,18 +34,9 @@ export const AuthProvider = ({ children }) => {
             if (tokenData.role === 'counsellor') {
                 try {
                     const response = await axios.get('/api/counsellor/profile')
-                    userData.counsellorInfo = response.data || {}
-
-                    // Ensure current_students is accurate by counting assigned students
-                    try {
-                        const studentsResp = await axios.get('/api/counsellor/students')
-                        const students = Array.isArray(studentsResp.data) ? studentsResp.data : []
-                        userData.counsellorInfo.current_students = students.length
-                    } catch (countErr) {
-                        console.warn('Could not fetch assigned students to compute count:', countErr)
-                        // fallback: keep whatever current_students is present
-                        userData.counsellorInfo.current_students = userData.counsellorInfo.current_students || 0
-                    }
+                    const profileData = response.data || {}
+                    userData.name = profileData.name
+                    userData.counsellorInfo = profileData
                 } catch (error) {
                     console.warn('Could not fetch counsellor info:', error)
                 }

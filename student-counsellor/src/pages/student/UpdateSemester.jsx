@@ -6,6 +6,8 @@ const UpdateSemester = () => {
     const [loading, setLoading] = useState(false)
     const [message, setMessage] = useState('')
     const [counsellors, setCounsellors] = useState([])
+    const [selectedCounsellorId, setSelectedCounsellorId] = useState(null)
+    const [currentStudentData, setCurrentStudentData] = useState(null)
     const [filters, setFilters] = useState({
         year: '',
         semester: '',
@@ -18,6 +20,46 @@ const UpdateSemester = () => {
     const semesters = [1, 2]
     const branches = ['CSE', 'ECE', 'EEE', 'MECH', 'CIVIL', 'IT']
     const sections = ['A', 'B', 'C', 'D']
+
+    // Load student's current data on component mount
+    useEffect(() => {
+        const loadStudentData = async () => {
+            try {
+                const response = await axios.get('/api/student/profile')
+                setCurrentStudentData(response.data)
+
+                // Pre-fill filters with student's current data if available
+                if (response.data.year && response.data.semester && response.data.branch && response.data.section) {
+                    const newFilters = {
+                        year: response.data.year.toString(),
+                        semester: response.data.semester.toString(),
+                        branch: response.data.branch || '',
+                        section: response.data.section || ''
+                    }
+                    setFilters(newFilters)
+
+                    // Auto-fetch counsellors if filters are complete
+                    try {
+                        const counsellorResponse = await axios.get('/api/student/available-counsellors', {
+                            params: newFilters
+                        })
+                        setCounsellors(counsellorResponse.data)
+                    } catch (error) {
+                        console.error('Error fetching counsellors:', error)
+                    }
+                }
+
+                // Set the selected counsellor if already assigned
+                if (response.data.counsellor_id) {
+                    setSelectedCounsellorId(response.data.counsellor_id)
+                }
+            } catch (error) {
+                console.error('Error loading student data:', error)
+            }
+        }
+
+        loadStudentData()
+    }, [])
 
     const handleFilterChange = (e) => {
         const { name, value } = e.target
@@ -50,7 +92,7 @@ const UpdateSemester = () => {
         }
     }
 
-    const handleSubmit = async (selectedCounsellorId) => {
+    const handleSubmit = async (counsellorIdToSelect) => {
         if (!filters.year || !filters.semester || !filters.branch || !filters.section) {
             setMessage({ type: 'error', text: 'Please select all options' })
             return
@@ -60,13 +102,22 @@ const UpdateSemester = () => {
             setLoading(true)
             const response = await axios.post('/api/student/update-semester', {
                 ...filters,
-                counsellor_id: selectedCounsellorId
+                counsellor_id: counsellorIdToSelect
             })
 
             setMessage({
                 type: 'success',
                 text: 'Semester updated successfully! Counsellor assigned.'
             })
+
+            // Update student data to reflect the new assignment
+            setCurrentStudentData(prev => ({
+                ...prev,
+                counsellor_id: counsellorIdToSelect
+            }))
+
+            // Set the selected counsellor ID
+            setSelectedCounsellorId(counsellorIdToSelect)
 
             // Refresh counsellors list to reflect updated counts and availability
             await fetchCounsellors()
@@ -90,6 +141,28 @@ const UpdateSemester = () => {
             {message && (
                 <div className={`p-4 rounded-lg mb-6 ${message.type === 'success' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
                     {message.text}
+                </div>
+            )}
+
+            {/* Current Assignment Display */}
+            {currentStudentData && currentStudentData.counsellor_id && (
+                <div className="bg-green-50 border border-green-300 rounded-lg p-4 mb-6">
+                    <div className="flex items-center">
+                        <div className="flex-1">
+                            <p className="text-sm font-medium text-green-700">Currently Assigned Counsellor</p>
+                            <p className="text-gray-700 mt-1">
+                                <span className="font-semibold">{currentStudentData.year}</span> Year,
+                                <span className="font-semibold"> Semester {currentStudentData.semester}</span>,
+                                <span className="font-semibold"> {currentStudentData.branch}</span> -
+                                <span className="font-semibold"> Section {currentStudentData.section}</span>
+                            </p>
+                        </div>
+                        <div className="text-right">
+                            <div className="inline-block bg-green-600 text-white px-3 py-1 rounded-full text-sm font-medium">
+                                ✓ Assigned
+                            </div>
+                        </div>
+                    </div>
                 </div>
             )}
 
@@ -217,7 +290,10 @@ const UpdateSemester = () => {
                         {counsellors.map((counsellor) => (
                             <div
                                 key={counsellor.id}
-                                className="border border-gray-200 rounded-lg p-4 hover:border-blue-300 hover:bg-blue-50 transition-colors"
+                                className={`border rounded-lg p-4 transition-colors ${selectedCounsellorId === counsellor.id
+                                    ? 'border-green-300 bg-green-50'
+                                    : 'border-gray-200 hover:border-blue-300 hover:bg-blue-50'
+                                    }`}
                             >
                                 <div className="flex items-center justify-between">
                                     <div>
@@ -239,10 +315,14 @@ const UpdateSemester = () => {
                                     </div>
                                     <button
                                         onClick={() => handleSubmit(counsellor.id)}
-                                        className="btn-primary flex items-center"
+                                        disabled={loading}
+                                        className={`flex items-center px-4 py-2 rounded-lg font-medium transition-colors ${selectedCounsellorId === counsellor.id
+                                            ? 'bg-green-600 text-white hover:bg-green-700'
+                                            : 'bg-blue-600 text-white hover:bg-blue-700'
+                                            } disabled:opacity-50 disabled:cursor-not-allowed`}
                                     >
                                         <Save className="w-4 h-4 mr-2" />
-                                        Select Counsellor
+                                        {selectedCounsellorId === counsellor.id ? 'Counsellor Selected' : 'Select Counsellor'}
                                     </button>
                                 </div>
                             </div>

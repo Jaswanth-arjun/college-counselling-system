@@ -75,6 +75,7 @@ CREATE TABLE counsellors (
     assigned_section VARCHAR(10),
     max_students INTEGER DEFAULT 30,
     current_students INTEGER DEFAULT 0,
+    assignments JSONB DEFAULT '[]'::jsonb,
     created_at TIMESTAMP DEFAULT NOW(),
     updated_at TIMESTAMP DEFAULT NOW()
 );

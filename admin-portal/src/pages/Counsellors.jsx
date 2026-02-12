@@ -132,14 +132,6 @@ const Counsellors = () => {
                                             {counsellor.users?.name}
                                         </h3>
                                         <p className="text-sm text-gray-600">{counsellor.counsellor_id}</p>
-                                        <div className="flex items-center mt-1">
-                                            <span className="inline-block px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded">
-                                                Year {counsellor.assigned_year}
-                                            </span>
-                                            <span className="ml-2 text-xs text-gray-500">
-                                                Max: {counsellor.max_students} students
-                                            </span>
-                                        </div>
                                     </div>
                                 </div>
 
@@ -149,38 +141,60 @@ const Counsellors = () => {
                                         <Mail className="w-4 h-4 mr-2 text-gray-400" />
                                         <span className="truncate">{counsellor.users?.email}</span>
                                     </div>
-                                    <div className="flex items-center text-sm text-gray-600">
-                                        <Users className="w-4 h-4 mr-2 text-gray-400" />
-                                        <span>
-                                            Assigned: {counsellor.current_students}/{counsellor.max_students} students
-                                        </span>
-                                    </div>
-                                    <div className="text-sm text-gray-600">
-                                        <div className="font-medium">Assigned To:</div>
-                                        <div>
-                                            {counsellor.assigned_branch} - Semester {counsellor.assigned_semester}
-                                        </div>
-                                        <div className="text-xs text-gray-500">
-                                            Section {counsellor.assigned_section}
-                                        </div>
+
+                                    {/* Show all assignments */}
+                                    <div className="text-sm text-gray-600 mt-4">
+                                        <div className="font-medium mb-3">Assigned Classes:</div>
+                                        {counsellor.assignments && counsellor.assignments.length > 0 ? (
+                                            <div className="space-y-2">
+                                                {counsellor.assignments.map((assignment, idx) => {
+                                                    const assignmentCounts = counsellor.assignment_counts?.[idx] || 0;
+                                                    const maxStudents = assignment.max_students || 30;
+                                                    const percentage = Math.round((assignmentCounts / maxStudents) * 100);
+
+                                                    return (
+                                                        <div key={idx} className="bg-gray-50 p-3 rounded-lg">
+                                                            <div className="flex justify-between items-start mb-2">
+                                                                <div>
+                                                                    <div className="font-medium text-gray-900">
+                                                                        {assignment.assigned_branch} - Sem {assignment.assigned_semester}
+                                                                    </div>
+                                                                    <div className="text-xs text-gray-500">
+                                                                        Section {assignment.assigned_section}
+                                                                    </div>
+                                                                </div>
+                                                                <span className="text-xs font-semibold bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                                                                    {assignmentCounts}/{maxStudents}
+                                                                </span>
+                                                            </div>
+                                                            <div className="w-full bg-gray-300 rounded-full h-1.5">
+                                                                <div
+                                                                    className="bg-blue-600 h-1.5 rounded-full transition-all duration-300"
+                                                                    style={{
+                                                                        width: `${Math.min(percentage, 100)}%`
+                                                                    }}
+                                                                ></div>
+                                                            </div>
+                                                            <div className="text-xs text-gray-500 mt-1">
+                                                                {percentage}% capacity
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        ) : (
+                                            <p className="text-xs text-gray-500">No assignments</p>
+                                        )}
                                     </div>
                                 </div>
 
-                                {/* Progress Bar */}
-                                <div className="mt-4">
-                                    <div className="flex justify-between text-xs text-gray-600 mb-1">
-                                        <span>Capacity</span>
-                                        <span>
-                                            {Math.round((counsellor.current_students / counsellor.max_students) * 100)}%
+                                {/* Overall Stats */}
+                                <div className="mt-4 pt-4 border-t border-gray-200">
+                                    <div className="flex justify-between text-xs text-gray-600">
+                                        <span>Total Students</span>
+                                        <span className="font-semibold">
+                                            {counsellor.total_students || 0}
                                         </span>
-                                    </div>
-                                    <div className="w-full bg-gray-200 rounded-full h-2">
-                                        <div
-                                            className="bg-green-600 h-2 rounded-full transition-all duration-300"
-                                            style={{
-                                                width: `${Math.min((counsellor.current_students / counsellor.max_students) * 100, 100)}%`
-                                            }}
-                                        ></div>
                                     </div>
                                 </div>
 

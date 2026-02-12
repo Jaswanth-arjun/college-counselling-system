@@ -119,7 +119,22 @@ const StudentDetailsEditable = () => {
                 text: 'Student data updated successfully!'
             })
 
-            setStudent(response.data)
+            // Update local student state and refresh form values
+            const updatedStudent = response.data
+            const flattened = { ...updatedStudent }
+            if (updatedStudent.attendance_data && typeof updatedStudent.attendance_data === 'object') {
+                Object.entries(updatedStudent.attendance_data).forEach(([k, v]) => {
+                    flattened[k] = v
+                })
+            }
+            if (updatedStudent.backlogs_data && typeof updatedStudent.backlogs_data === 'object') {
+                Object.entries(updatedStudent.backlogs_data).forEach(([k, v]) => {
+                    flattened[k] = v
+                })
+            }
+
+            setStudent(updatedStudent)
+            reset(flattened)
             setIsEditMode(false)
 
             // Clear message after 3 seconds

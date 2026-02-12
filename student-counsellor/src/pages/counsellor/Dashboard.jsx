@@ -67,7 +67,7 @@ const CounsellorDashboard = () => {
                                 <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
                             </div>
                             <div className="ml-3">
-                                <p className="text-sm font-medium text-gray-900">{user?.name}</p>
+                                <p className="text-sm font-medium text-gray-900">{user?.name || user?.counsellorInfo?.name}</p>
                                 <p className="text-xs text-gray-500">ID: {user?.counsellorInfo?.counsellor_id}</p>
                             </div>
                         </div>
@@ -119,18 +119,22 @@ const CounsellorDashboard = () => {
                         <div className="px-4 mt-6">
                             <div className="bg-blue-50 rounded-lg p-4">
                                 <div className="flex items-center justify-between mb-2">
-                                    <span className="text-sm text-gray-600">Assigned Students</span>
+                                    <span className="text-sm text-gray-600">Total Students</span>
                                     <span className="text-sm font-semibold text-blue-600">
-                                        {user?.counsellorInfo?.current_students || 0}/{user?.counsellorInfo?.max_students || 30}
+                                        {user?.counsellorInfo?.total_students || 0}
                                     </span>
                                 </div>
-                                <div className="w-full bg-blue-200 rounded-full h-2">
-                                    <div
-                                        className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                                        style={{
-                                            width: `${((user?.counsellorInfo?.current_students || 0) / (user?.counsellorInfo?.max_students || 30)) * 100}%`
-                                        }}
-                                    ></div>
+                                <div className="text-xs text-gray-500 mt-2 space-y-1">
+                                    {user?.counsellorInfo?.assignments && user.counsellorInfo.assignments.length > 0 ? (
+                                        user.counsellorInfo.assignments.map((assignment, idx) => (
+                                            <div key={idx} className="flex justify-between items-center">
+                                                <span>{assignment.assigned_branch} - Sem {assignment.assigned_semester}, Sec {assignment.assigned_section}</span>
+                                                <span className="font-semibold">{user.counsellorInfo.assignment_counts?.[idx] || 0}/{assignment.max_students || 30}</span>
+                                            </div>
+                                        ))
+                                    ) : (
+                                        <span>No assignments</span>
+                                    )}
                                 </div>
                             </div>
                         </div>
@@ -181,9 +185,9 @@ const CounsellorHome = () => {
                             <Users className="w-6 h-6 text-blue-600" />
                         </div>
                         <div>
-                            <p className="text-sm text-gray-600">Assigned Students</p>
+                            <p className="text-sm text-gray-600">Total Assigned Students</p>
                             <p className="text-2xl font-bold text-gray-900">
-                                {user?.counsellorInfo?.current_students || 0}
+                                {user?.counsellorInfo?.total_students || 0}
                             </p>
                         </div>
                     </div>
@@ -202,23 +206,24 @@ const CounsellorHome = () => {
                 </div>
 
                 <div className="bg-white rounded-xl shadow p-6">
-                    <div className="flex items-center">
-                        <div className="p-3 bg-purple-100 rounded-lg mr-4">
-                            <Filter className="w-6 h-6 text-purple-600" />
-                        </div>
-                        <div>
-                            <p className="text-sm text-gray-600">Assigned To</p>
-                            <p className="text-lg font-semibold text-gray-900">
-                                {user?.counsellorInfo?.assigned_branch || 'All'} -
-                                Year {user?.counsellorInfo?.assigned_year || ''}
-                            </p>
+                    <div className="flex flex-col">
+                        <div className="flex items-center">
+                            <div className="p-3 bg-purple-100 rounded-lg mr-4">
+                                <Filter className="w-6 h-6 text-purple-600" />
+                            </div>
+                            <div className="flex-1">
+                                <p className="text-sm text-gray-600">Assigned Classes</p>
+                                <p className="text-lg font-semibold text-gray-900">
+                                    {user?.counsellorInfo?.assignments?.length || 0}
+                                </p>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
 
             {/* Quick Actions */}
-            <div className="bg-white rounded-xl shadow p-6">
+            <div className="bg-white rounded-xl shadow p-6 mb-8">
                 <h2 className="text-xl font-semibold text-gray-900 mb-4">Quick Actions</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                     <Link
@@ -238,6 +243,49 @@ const CounsellorHome = () => {
                     </Link>
                 </div>
             </div>
+
+            {/* Assigned Classes Details */}
+            {user?.counsellorInfo?.assignments && user.counsellorInfo.assignments.length > 0 && (
+                <div className="bg-white rounded-xl shadow p-6">
+                    <h2 className="text-xl font-semibold text-gray-900 mb-4">My Assigned Classes</h2>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {user.counsellorInfo.assignments.map((assignment, idx) => (
+                            <div key={idx} className="border border-gray-200 rounded-lg p-4">
+                                <div className="flex justify-between items-start mb-3">
+                                    <div>
+                                        <div className="font-semibold text-gray-900">{assignment.assigned_branch}</div>
+                                        <div className="text-sm text-gray-600">
+                                            Year {assignment.assigned_year} - Semester {assignment.assigned_semester}
+                                        </div>
+                                        <div className="text-sm text-gray-600">
+                                            Section {assignment.assigned_section}
+                                        </div>
+                                    </div>
+                                    <div className="text-right">
+                                        <div className="text-xl font-bold text-blue-600">
+                                            {user.counsellorInfo.assignment_counts?.[idx] || 0}
+                                        </div>
+                                        <div className="text-xs text-gray-500">
+                                            /{assignment.max_students || 30} students
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="w-full bg-gray-200 rounded-full h-2">
+                                    <div
+                                        className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                                        style={{
+                                            width: `${Math.min(((user.counsellorInfo.assignment_counts?.[idx] || 0) / (assignment.max_students || 30)) * 100, 100)}%`
+                                        }}
+                                    ></div>
+                                </div>
+                                <div className="text-xs text-gray-500 mt-2 text-right">
+                                    {Math.round(((user.counsellorInfo.assignment_counts?.[idx] || 0) / (assignment.max_students || 30)) * 100)}% capacity
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
         </div>
     )
 }

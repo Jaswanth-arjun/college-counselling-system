@@ -1,16 +1,11 @@
 import React, { useEffect, useState } from "react"
-import { useForm, useFieldArray, useWatch } from "react-hook-form"
+import { useForm, useWatch } from "react-hook-form"
 import axios from "axios"
-import { Save, Loader, Plus, Trash2, Calendar, MessageSquare } from "lucide-react"
+import { Save, Loader, Calendar } from "lucide-react"
 
 const CounsellingForm = () => {
     const { register, handleSubmit, reset, control, formState: { errors } } = useForm()
     const residenceValue = useWatch({ control, name: 'residence' })
-
-    const { fields, append, remove } = useFieldArray({
-        control,
-        name: "counselling_info"
-    })
 
     const [loading, setLoading] = useState(false)
     const [refreshing, setRefreshing] = useState(false)
@@ -50,7 +45,9 @@ const CounsellingForm = () => {
                 father_occupation: studentData.father_occupation || '',
                 mother_occupation: studentData.mother_occupation || '',
                 // Ensure residence is properly set
-                residence: studentData.residence || ''
+                residence: studentData.residence || '',
+                // Ensure extra_activities is a string, not an array
+                extra_activities: typeof studentData.extra_activities === 'string' ? studentData.extra_activities : (Array.isArray(studentData.extra_activities) ? studentData.extra_activities.join(', ') : '') || ''
             }
 
             // Flatten attendance_data JSONB into individual fields
@@ -520,72 +517,6 @@ const CounsellingForm = () => {
                     </div>
                 </div>
 
-                {/* FEE DETAILS */}
-                <div className="card">
-                    <div className="flex items-center mb-6">
-                        <div className="w-3 h-6 bg-amber-600 rounded-r mr-3"></div>
-                        <h2 className="text-xl font-semibold text-gray-900">Fee Details</h2>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Tuition Fee (RTF)
-                            </label>
-                            <input
-                                {...register("tuition_rtf")}
-                                type="number"
-                                step="0.01"
-                                className={`input-field ${isSubmitted ? 'bg-gray-50 cursor-not-allowed' : ''}`}
-                                placeholder="0.00"
-                                readOnly={isSubmitted}
-                            />
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Tuition Fee (MQ)
-                            </label>
-                            <input
-                                {...register("tuition_mq")}
-                                type="number"
-                                step="0.01"
-                                className={`input-field ${isSubmitted ? 'bg-gray-50 cursor-not-allowed' : ''}`}
-                                placeholder="0.00"
-                                readOnly={isSubmitted}
-                            />
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Tuition Fee (NRTF)
-                            </label>
-                            <input
-                                {...register("tuition_nrtf")}
-                                type="number"
-                                step="0.01"
-                                className={`input-field ${isSubmitted ? 'bg-gray-50 cursor-not-allowed' : ''}`}
-                                placeholder="0.00"
-                                readOnly={isSubmitted}
-                            />
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Concession
-                            </label>
-                            <input
-                                {...register("concession")}
-                                type="number"
-                                step="0.01"
-                                className={`input-field ${isSubmitted ? 'bg-gray-50 cursor-not-allowed' : ''}`}
-                                placeholder="0.00"
-                                readOnly={isSubmitted}
-                            />
-                        </div>
-                    </div>
-                </div>
-
                 {/* RESIDENCE DETAILS */}
                 <div className="card">
                     <div className="flex items-center mb-6">
@@ -874,170 +805,77 @@ const CounsellingForm = () => {
                 </div>
 
                 {/* COUNSELLING SESSIONS FROM COUNSELLOR */}
-                {counsellingRecords.length > 0 && (
-                    <div className="card">
-                        <div className="flex items-center mb-6">
-                            <div className="w-3 h-6 bg-pink-600 rounded-r mr-3"></div>
-                            <h2 className="text-xl font-semibold text-gray-900">Counselling Sessions by Your Counsellor</h2>
-                        </div>
+                {
+                    counsellingRecords.length > 0 && (
+                        <div className="card">
+                            <div className="flex items-center mb-6">
+                                <div className="w-3 h-6 bg-pink-600 rounded-r mr-3"></div>
+                                <h2 className="text-xl font-semibold text-gray-900">Counselling Sessions by Your Counsellor</h2>
+                            </div>
 
-                        <div className="space-y-4">
-                            {counsellingRecords.map((record, index) => (
-                                <div
-                                    key={record.id}
-                                    className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-6"
-                                >
-                                    <div className="flex justify-between items-start mb-4">
-                                        <div>
-                                            <h4 className="font-medium text-gray-900 text-lg">
-                                                Session {index + 1}
-                                            </h4>
-                                            <div className="flex items-center text-gray-600 mt-1">
-                                                <Calendar className="w-4 h-4 mr-2" />
-                                                <span>
-                                                    {new Date(record.counselling_date).toLocaleDateString('en-IN', {
-                                                        weekday: 'short',
-                                                        year: 'numeric',
-                                                        month: 'short',
-                                                        day: 'numeric'
-                                                    })}
-                                                </span>
+                            <div className="space-y-4">
+                                {counsellingRecords.map((record, index) => (
+                                    <div
+                                        key={record.id}
+                                        className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-6"
+                                    >
+                                        <div className="flex justify-between items-start mb-4">
+                                            <div>
+                                                <h4 className="font-medium text-gray-900 text-lg">
+                                                    Session {index + 1}
+                                                </h4>
+                                                <div className="flex items-center text-gray-600 mt-1">
+                                                    <Calendar className="w-4 h-4 mr-2" />
+                                                    <span>
+                                                        {new Date(record.counselling_date).toLocaleDateString('en-IN', {
+                                                            weekday: 'short',
+                                                            year: 'numeric',
+                                                            month: 'short',
+                                                            day: 'numeric'
+                                                        })}
+                                                    </span>
+                                                </div>
                                             </div>
+                                            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                                From Counsellor
+                                            </span>
                                         </div>
-                                        <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                            From Counsellor
-                                        </span>
-                                    </div>
 
-                                    <div className="bg-white p-4 rounded-lg border border-blue-100">
-                                        <h5 className="font-medium text-gray-700 mb-2">Session Notes:</h5>
-                                        <p className="text-gray-700 whitespace-pre-wrap leading-relaxed">
-                                            {record.remarks || 'No notes provided for this session.'}
-                                        </p>
+                                        <div className="bg-white p-4 rounded-lg border border-blue-100">
+                                            <h5 className="font-medium text-gray-700 mb-2">Session Notes:</h5>
+                                            <p className="text-gray-700 whitespace-pre-wrap leading-relaxed">
+                                                {record.remarks || 'No notes provided for this session.'}
+                                            </p>
+                                        </div>
                                     </div>
-                                </div>
-                            ))}
+                                ))}
+                            </div>
                         </div>
+                    )
+                }
+
+                {/* SUBMIT BUTTON */}
+                {!isSubmitted && (
+                    <div className="flex justify-end sticky bottom-6 bg-white/90 backdrop-blur-sm p-4 rounded-lg shadow-lg">
+                        <button
+                            type="submit"
+                            disabled={loading}
+                            className="btn-primary flex items-center space-x-2 px-8 py-3 text-lg"
+                        >
+                            {loading ? (
+                                <>
+                                    <Loader className="w-5 h-5 animate-spin" />
+                                    <span>Saving...</span>
+                                </>
+                            ) : (
+                                <>
+                                    <Save className="w-5 h-5" />
+                                    <span>Save All Information</span>
+                                </>
+                            )}
+                        </button>
                     </div>
                 )}
-
-                {/* STUDENT'S OWN COUNSELLING NOTES */}
-                <div className="card">
-                    <div className="flex items-center mb-6">
-                        <div className="w-3 h-6 bg-pink-600 rounded-r mr-3"></div>
-                        <h2 className="text-xl font-semibold text-gray-900">Your Counselling Notes</h2>
-                    </div>
-
-                    <div className="space-y-4">
-                        {fields.length === 0 && (
-                            <div className="text-center py-8 border-2 border-dashed border-gray-300 rounded-lg">
-                                <MessageSquare className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-                                <p className="text-gray-500">No personal notes added yet.</p>
-                                <p className="text-sm text-gray-400 mt-1">Click 'Add Note' to record your own counselling observations</p>
-                            </div>
-                        )}
-
-                        {fields.map((item, index) => (
-                            <div
-                                key={item.id}
-                                className="bg-white border border-gray-200 rounded-lg p-4"
-                            >
-                                <div className="flex justify-between items-center mb-4">
-                                    <span className="text-sm font-medium text-gray-700">
-                                        Note {index + 1}
-                                    </span>
-                                    <button
-                                        type="button"
-                                        onClick={() => remove(index)}
-                                        className="text-red-600 hover:text-red-800 flex items-center space-x-1"
-                                    >
-                                        <Trash2 className="w-4 h-4" />
-                                        <span className="text-sm">Remove</span>
-                                    </button>
-                                </div>
-
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                                            Date
-                                        </label>
-                                        <div className="relative">
-                                            <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                                            <input
-                                                type="date"
-                                                {...register(`counselling_info.${index}.date`)}
-                                                className={`input-field pl-10 ${isSubmitted ? 'bg-gray-50 cursor-not-allowed' : ''}`}
-                                                readOnly={isSubmitted}
-                                            />
-                                        </div>
-                                    </div>
-
-                                    <div className="md:col-span-2">
-                                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                                            Notes
-                                        </label>
-                                        <input
-                                            type="text"
-                                            {...register(`counselling_info.${index}.remarks`)}
-                                            className={`input-field ${isSubmitted ? 'bg-gray-50 cursor-not-allowed' : ''}`}
-                                            placeholder="Enter your notes"
-                                            readOnly={isSubmitted}
-                                        />
-                                    </div>
-                                </div>
-                            </div>
-                        ))}
-
-                        {!isSubmitted && (
-                            <button
-                                type="button"
-                                onClick={() => append({ date: "", remarks: "" })}
-                                className="btn-secondary flex items-center justify-center space-x-2 w-full"
-                            >
-                                <Plus className="w-5 h-5" />
-                                <span>Add Note</span>
-                            </button>
-                        )}
-                        {/* SUBMIT BUTTON - Only show if not submitted */}
-                        {!isSubmitted && (
-                            <div className="flex justify-end sticky bottom-6 bg-white/90 backdrop-blur-sm p-4 rounded-lg shadow-lg">
-                                <button
-                                    type="submit"
-                                    disabled={loading}
-                                    className="btn-primary flex items-center space-x-2 px-8 py-3 text-lg"
-                                >
-                                    {loading ? (
-                                        <>
-                                            <Loader className="w-5 h-5 animate-spin" />
-                                            <span>Saving...</span>
-                                        </>
-                                    ) : (
-                                        <>
-                                            <Save className="w-5 h-5" />
-                                            <span>Save All Information</span>
-                                        </>
-                                    )}
-                                </button>
-                            </div>
-                        )}
-
-                        {/* SUBMITTED MESSAGE - Show if already submitted */}
-                        {isSubmitted && (
-                            <div className="sticky bottom-6 bg-white/90 backdrop-blur-sm p-6 rounded-lg shadow-lg border-2 border-green-200">
-                                <div className="space-y-4">
-                                    <div className="flex items-center space-x-2 text-green-600">
-                                        <Save className="w-6 h-6" />
-                                        <span className="text-lg font-semibold">Information Saved Successfully</span>
-                                    </div>
-                                    <p className="text-gray-700 text-sm">
-                                        <strong>Your information is now saved and read-only.</strong> If you need to modify any details, please contact your assigned counsellor. Any changes to your counselling information will be made by your counsellor through the admin portal.
-                                    </p>
-                                </div>
-                            </div>
-                        )}
-
-                    </div>
-                </div>
             </form>
         </div>
     )
