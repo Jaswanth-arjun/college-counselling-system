@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import axios from 'axios'
-import { Search, Filter, User, Phone, Mail, Calendar, RefreshCw } from 'lucide-react'
+import { Search, Filter, User, Phone, Mail, Calendar, RefreshCw, Trash2, X } from 'lucide-react'
 
 const StudentList = () => {
     const [loading, setLoading] = useState(true)
@@ -9,6 +9,8 @@ const StudentList = () => {
     const [filteredStudents, setFilteredStudents] = useState([])
     const [searchTerm, setSearchTerm] = useState('')
     const [error, setError] = useState('')
+    const [deleteConfirm, setDeleteConfirm] = useState(null)
+    const [deleting, setDeleting] = useState(false)
     const [filters, setFilters] = useState({
         year: '',
         semester: '',
@@ -99,6 +101,19 @@ const StudentList = () => {
             section: ''
         })
         setSearchTerm('')
+    }
+
+    const handleDeleteStudent = async (studentId, studentName) => {
+        try {
+            setDeleting(true)
+            await axios.post(`/api/counsellor/students/${studentId}/unassign`)
+            setDeleteConfirm(null)
+            setStudents(students.filter(s => s.id !== studentId))
+        } catch (error) {
+            setError(error.response?.data?.error || 'Failed to remove student')
+        } finally {
+            setDeleting(false)
+        }
     }
 
     if (loading) {
@@ -308,24 +323,66 @@ const StudentList = () => {
 
                                 {/* Action Buttons */}
                                 <div className="mt-6 pt-4 border-t border-gray-100">
-                                    <div className="flex space-x-3">
+                                    <div className="flex gap-2">
                                         <Link
                                             to={`/counsellor/students/${student.id}`}
-                                            className="flex-1 btn-primary text-center"
+                                            className="flex-1 btn-primary text-center text-sm"
                                         >
                                             View Details
                                         </Link>
                                         <Link
                                             to={`/counsellor/students/${student.id}/counselling`}
-                                            className="flex-1 btn-secondary text-center"
+                                            className="flex-1 btn-secondary text-center text-sm"
                                         >
                                             Add Record
                                         </Link>
+                                        <button
+                                            onClick={() => setDeleteConfirm(student)}
+                                            className="p-2 text-red-600 hover:bg-red-50 rounded-lg border border-red-200 transition-colors"
+                                            title="Remove student"
+                                        >
+                                            <Trash2 className="w-4 h-4" />
+                                        </button>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     ))}
+                </div>
+            )}
+
+            {/* Delete Confirmation Modal */}
+            {deleteConfirm && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+                    <div className="bg-white rounded-xl shadow-2xl max-w-sm w-full">
+                        <div className="p-6">
+                            <div className="flex items-center justify-center w-12 h-12 mx-auto bg-red-100 rounded-full mb-4">
+                                <Trash2 className="w-6 h-6 text-red-600" />
+                            </div>
+                            <h3 className="text-lg font-semibold text-gray-900 text-center mb-2">
+                                Remove Student
+                            </h3>
+                            <p className="text-gray-600 text-center mb-6">
+                                Are you sure you want to remove <strong>{deleteConfirm.users?.name}</strong> from your assigned students? This action cannot be undone.
+                            </p>
+                            <div className="flex gap-3">
+                                <button
+                                    onClick={() => setDeleteConfirm(null)}
+                                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+                                    disabled={deleting}
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={() => handleDeleteStudent(deleteConfirm.id, deleteConfirm.users?.name)}
+                                    className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50"
+                                    disabled={deleting}
+                                >
+                                    {deleting ? 'Removing...' : 'Remove'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             )}
         </div>

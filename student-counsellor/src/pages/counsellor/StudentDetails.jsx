@@ -400,8 +400,14 @@ const StudentDetails = () => {
                         {/* MOOCs */}
                         <div className="bg-purple-50 rounded-lg p-6">
                             <h4 className="font-medium text-gray-900 mb-4">MOOCs Courses</h4>
-                            {student.moocs_courses ? (
-                                <p className="text-gray-800">{student.moocs_courses}</p>
+                            {student.moocs_courses && student.moocs_courses !== '[]' ? (
+                                <p className="text-gray-800">
+                                    {typeof student.moocs_courses === 'string'
+                                        ? student.moocs_courses
+                                        : Array.isArray(student.moocs_courses)
+                                            ? student.moocs_courses.join(', ')
+                                            : ''}
+                                </p>
                             ) : (
                                 <p className="text-gray-600">No MOOCs information provided</p>
                             )}
@@ -410,8 +416,14 @@ const StudentDetails = () => {
                         {/* Extra Activities */}
                         <div className="bg-yellow-50 rounded-lg p-6">
                             <h4 className="font-medium text-gray-900 mb-4">Extra Activities</h4>
-                            {student.extra_activities ? (
-                                <p className="text-gray-800">{student.extra_activities}</p>
+                            {student.extra_activities && student.extra_activities !== '[]' ? (
+                                <p className="text-gray-800">
+                                    {typeof student.extra_activities === 'string'
+                                        ? student.extra_activities
+                                        : Array.isArray(student.extra_activities)
+                                            ? student.extra_activities.join(', ')
+                                            : ''}
+                                </p>
                             ) : (
                                 <p className="text-gray-600">No activities information provided</p>
                             )}

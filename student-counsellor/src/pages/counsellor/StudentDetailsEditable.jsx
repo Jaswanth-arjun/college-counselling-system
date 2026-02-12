@@ -74,6 +74,18 @@ const StudentDetailsEditable = () => {
                 })
             }
 
+            // Ensure extra_activities and moocs_courses are strings, not arrays
+            flattened.extra_activities = typeof studentData.extra_activities === 'string'
+                ? studentData.extra_activities
+                : (Array.isArray(studentData.extra_activities)
+                    ? studentData.extra_activities.join(', ')
+                    : '') || ''
+            flattened.moocs = typeof studentData.moocs_courses === 'string'
+                ? studentData.moocs_courses
+                : (Array.isArray(studentData.moocs_courses)
+                    ? studentData.moocs_courses.join(', ')
+                    : '') || ''
+
             setStudent(studentData)
             reset(flattened)
         } catch (error) {
@@ -132,6 +144,18 @@ const StudentDetailsEditable = () => {
                     flattened[k] = v
                 })
             }
+
+            // Ensure extra_activities and moocs_courses are strings, not arrays
+            flattened.extra_activities = typeof updatedStudent.extra_activities === 'string'
+                ? updatedStudent.extra_activities
+                : (Array.isArray(updatedStudent.extra_activities)
+                    ? updatedStudent.extra_activities.join(', ')
+                    : '') || ''
+            flattened.moocs = typeof updatedStudent.moocs_courses === 'string'
+                ? updatedStudent.moocs_courses
+                : (Array.isArray(updatedStudent.moocs_courses)
+                    ? updatedStudent.moocs_courses.join(', ')
+                    : '') || ''
 
             setStudent(updatedStudent)
             reset(flattened)

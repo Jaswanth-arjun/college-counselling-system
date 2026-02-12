@@ -1,6 +1,7 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Routes, Route, Link, Navigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
+import axios from 'axios'
 import {
     LayoutDashboard,
     FileEdit,
@@ -17,6 +18,21 @@ import UpdateSemester from './UpdateSemester'
 const StudentDashboard = () => {
     const { user, logout } = useAuth()
     const [sidebarOpen, setSidebarOpen] = useState(true)
+    const [profileImage, setProfileImage] = useState(null)
+
+    useEffect(() => {
+        const fetchProfileImage = async () => {
+            try {
+                const response = await axios.get('/api/student/profile')
+                if (response.data?.users?.profile_image) {
+                    setProfileImage(response.data.users.profile_image)
+                }
+            } catch (error) {
+                console.error('Error fetching profile image:', error)
+            }
+        }
+        fetchProfileImage()
+    }, [])
 
     const handleLogout = () => {
         logout()
@@ -54,8 +70,16 @@ const StudentDashboard = () => {
                         {/* Profile Section */}
                         <div className="flex items-center px-6 pb-6 border-b">
                             <div className="relative">
-                                <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center">
-                                    <User className="w-6 h-6 text-blue-600" />
+                                <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center overflow-hidden">
+                                    {profileImage ? (
+                                        <img
+                                            src={profileImage}
+                                            alt={user?.name}
+                                            className="w-full h-full object-cover"
+                                        />
+                                    ) : (
+                                        <User className="w-6 h-6 text-blue-600" />
+                                    )}
                                 </div>
                                 <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
                             </div>

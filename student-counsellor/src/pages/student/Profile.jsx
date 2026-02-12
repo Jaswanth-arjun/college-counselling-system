@@ -79,9 +79,9 @@ const Profile = () => {
             setLoading(true)
             const formData = new FormData()
             const blob = await fetch(croppedImage).then(r => r.blob())
-            formData.append('image', blob, 'profile.jpg')
+            formData.append('photo', blob, 'profile.jpg')
 
-            await axios.post('/api/student/profile-image', formData, {
+            await axios.post('/api/student/profile-picture', formData, {
                 headers: {
                     'Content-Type': 'multipart/form-data'
                 }

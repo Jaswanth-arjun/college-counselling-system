@@ -43,7 +43,9 @@ export const AuthProvider = ({ children }) => {
             } else if (tokenData.role === 'student') {
                 try {
                     const response = await axios.get('/api/student/profile')
-                    userData.studentInfo = response.data
+                    const profileData = response.data || {}
+                    userData.name = profileData.users?.name
+                    userData.studentInfo = profileData
                 } catch (error) {
                     console.warn('Could not fetch student info:', error)
                 }
